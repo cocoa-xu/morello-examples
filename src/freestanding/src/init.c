@@ -1,0 +1,133 @@
+/*
+ * Copyright (c) 2023 Arm Limited. All rights reserved.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+#include "libc.h"
+#include "morello.h"
+
+typedef struct {
+    uint64_t location;
+    uint64_t base;
+    size_t offset;
+    size_t size;
+    size_t permissions;
+} cap_relocs_entry_t;
+
+#define __get_addr_of(sym) ({ \
+    void *p; \
+    __asm__ ( \
+    ".weak " sym "\n" "adrp %0, " sym "\n" "add %0, %0, :lo12:" sym "\n" : "=X"(p)); \
+    p; \
+})
+
+int init_cap_relocs(const auxv_t *auxv)
+{
+    const cap_relocs_entry_t *cap_start = __get_addr_of("__cap_relocs_start");
+    const cap_relocs_entry_t *cap_end = __get_addr_of("__cap_relocs_end");
+    if (cap_end == cap_start || cap_start == NULL || cap_end == NULL) {
+        return 1;
+    }
+    void *rw = NULL;
+    void *rx = NULL;
+    for (; auxv->type; auxv++) {
+        switch (auxv->type) {
+            case AT_CHERI_EXEC_RW_CAP: rw = auxv->ptr; break;
+            case AT_CHERI_EXEC_RX_CAP: rx = auxv->ptr; break;
+        }
+        if (rw && rx) break;
+    }
+    if (!rw || !rx) {
+        return 2;
+    }
+    for (const cap_relocs_entry_t *r = cap_start; r < cap_end; r++) {
+        if (!r->base) continue;
+        void *cap = NULL;
+        size_t perm = ~r->permissions;
+        bool is_fun_ptr = perm & __CHERI_CAP_PERMISSION_PERMIT_EXECUTE__;
+        bool is_writable = perm & __CHERI_CAP_PERMISSION_PERMIT_STORE__;
+        if (is_writable) {
+            cap = __builtin_cheri_address_set(rw, r->base);
+        } else {
+            cap = __builtin_cheri_address_set(rx, r->base);
+        }
+        cap = __builtin_cheri_perms_and(cap, perm);
+        cap = __builtin_cheri_bounds_set_exact(cap, r->size);
+        cap = __builtin_cheri_offset_set(cap, r->offset);
+        if (is_fun_ptr) {
+            cap = __builtin_cheri_seal_entry(cap);
+        }
+        // store capability
+        void **loc = __builtin_cheri_address_set(rw, r->location);
+        loc = __builtin_cheri_bounds_set_exact(loc, sizeof(void *));
+        *loc = cap;
+    }
+    return 0;
+}
+
+typedef struct {
+    uint64_t r_offset;
+    uint64_t r_info;
+    int64_t r_addend;
+} rela_t;
+
+typedef struct {
+    uint64_t address;
+    uint64_t length : 56;
+    uint64_t perms : 8;
+} cap_rela_t;
+
+#define MORELLO_RELA_PERM_RX 4
+#define MORELLO_RELA_PERM_RW 2
+#define MORELLO_RELA_PERM_R 1
+
+#define R_MORELLO_RELATIVE 59395
+
+int init_morello_relative(const auxv_t *auxv)
+{
+    const rela_t *rela_start = __get_addr_of("__rela_dyn_start");
+    const rela_t *rela_end = __get_addr_of("__rela_dyn_end");
+    if (rela_start == rela_end || rela_start == NULL || rela_end == NULL) {
+        return 1;
+    }
+    void *rw = NULL;
+    void *rx = NULL;
+    for (; auxv->type; auxv++) {
+        switch (auxv->type) {
+            case AT_CHERI_EXEC_RW_CAP: rw = auxv->ptr; break;
+            case AT_CHERI_EXEC_RX_CAP: rx = auxv->ptr; break;
+        }
+        if (rw && rx) break;
+    }
+    if (!rw || !rx) {
+        return 2;
+    }
+    for (const rela_t *r = rela_start; r < rela_end; r++) {
+        if (r->r_info != R_MORELLO_RELATIVE) continue;
+        void *cap = NULL, **loc = __builtin_cheri_address_set(rw, r->r_offset);
+        const cap_rela_t *u = (cap_rela_t *)loc;
+        switch (u->perms) {
+            case MORELLO_RELA_PERM_R:
+                cap = __builtin_cheri_perms_and(rx, __CHERI_CAP_PERMISSION_GLOBAL__ | READ_CAP_PERMS);
+                break;
+            case MORELLO_RELA_PERM_RW:
+                cap = __builtin_cheri_perms_and(rw, __CHERI_CAP_PERMISSION_GLOBAL__ | READ_CAP_PERMS | WRITE_CAP_PERMS);
+                break;
+            case MORELLO_RELA_PERM_RX:
+                cap = __builtin_cheri_perms_and(rx, __CHERI_CAP_PERMISSION_GLOBAL__ | READ_CAP_PERMS | EXEC_CAP_PERMS);
+                break;
+            default:
+                cap = __builtin_cheri_perms_and(rx, 0);
+                break;
+        }
+        cap = __builtin_cheri_address_set(cap, u->address);
+        cap = __builtin_cheri_bounds_set_exact(cap, u->length);
+        cap = cap + r->r_addend;
+        if (u->perms == MORELLO_RELA_PERM_RX) {
+            cap = __builtin_cheri_seal_entry(cap);
+        }
+        *loc = cap;
+    }
+    return 0;
+}

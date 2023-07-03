@@ -3,5 +3,5 @@
 *.a
 *.so
 
-target
+config.make
 build

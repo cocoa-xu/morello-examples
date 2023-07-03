@@ -1,0 +1,159 @@
+#!/bin/bash
+
+usage () {
+cat <<EOF
+
+Usage: ${0} [options]... [VAR=VALUE]...
+
+Configuration:
+  --sysroot=DIR       sysroot directory for Clang compiler
+  --build=DIR         path to the build folder [build]
+
+Environment variables:
+  CC                  C compiler command
+  CFLAGS              C compiler flags
+  CXXFLAGS            C++ compiler flags
+  LFLAGS              Linker flags
+
+EOF
+exit 0
+}
+
+# utility functions
+fnmatch () {
+  eval "case \"\${2}\" in ${1}) return 0 ;; *) return 1 ;; esac" ;
+}
+fail () { echo "$*" ; exit 1 ; }
+try_cflag () {
+  printf "Checking if C compiler accepts %s ... " "${2}"
+  if echo "typedef int x;" | ${CC} -x c - ${cflags} "${2}" -c -o /dev/null >/dev/null 2>&1 ; then
+    printf "yes\n"
+    eval "${1}=\"\${${1}} \${2}\""
+    eval "${1}=\${$1# }"
+    return 0
+  else
+    printf "no\n"
+    return 1
+  fi
+}
+try_cxxflag () {
+  printf "Checking if C++ compiler accepts %s ... " "${2}"
+  if echo "using x = int;" | ${CC} -x c++ - ${cxxflags} "${2}" -c -o /dev/null >/dev/null 2>&1 ; then
+    printf "yes\n"
+    eval "${1}=\"\${${1}} \${2}\""
+    eval "${1}=\${$1# }"
+    return 0
+  else
+    printf "no\n"
+    return 1
+  fi
+}
+try_lflag () {
+  printf "Checking if linker accepts %s ... " "${2}"
+  if echo "typedef int x;" | ${CC} -x c - ${lflags} "${2}" -nostdlib -shared -o /dev/null >/dev/null 2>&1 ; then
+    printf "yes\n"
+    eval "${1}=\"\${${1}} \${2}\""
+    eval "${1}=\${$1# }"
+    return 0
+  else
+    printf "no\n"
+    return 1
+  fi
+}
+try_comp_flag () {
+  try_cflag cflags "$@"
+  try_cxxflag cxxflags "$@"
+}
+
+# local variables
+cflags=
+cxxflags=
+lflags=
+sysroot=
+build=build
+
+# scan command line for params and variables
+for arg ; do
+  case "${arg}" in
+    --help|-h) usage ;;
+    --sysroot=*) sysroot=${arg#*=} ;;
+    --build=*) build=${arg#*=} ;;
+    -* ) echo "$0: unknown option ${arg}" ;;
+    CC=*) CC=${arg#*=} ;;
+    CFLAGS=*) CFLAGS=${arg#*=} ;;
+    CXXFLAGS=*) CXXFLAGS=${arg#*=} ;;
+    LFLAGS=*) LFLAGS=${arg#*=} ;;
+    *=*) ;;
+  esac
+done
+
+# find type of the compiler
+version="$(LC_ALL=C ${CC} -v 2>&1)"
+if fnmatch '*gcc\ version*' "${version}" ; then
+  family=gcc
+elif fnmatch '*clang\ version*' "${version}" ; then
+  family=clang
+else
+  fail "Compiler ${CC} not supported or doesn't exist"
+fi
+# find C++ compiler
+case "${family}" in
+  clang) CXX="${CC}++" ;;
+  gcc) CXX="${CC/%gcc/"g++"}" ;;
+esac
+
+# print information
+printf "C compiler: %s (%s)\n" "$CC" "${family}"
+printf "CXX compiler: %s\n" "$CXX"
+
+# compiler flags
+for flag in ${CFLAGS}; do
+  try_cflag cflags "${flag}"
+done
+for flag in ${CXXFLAGS}; do
+  try_cxxflag cxxflags "${flag}"
+done
+try_comp_flag -Wall
+if [[ "${family}" == "clang" ]] ; then
+  if [[ "${sysroot}" == "" ]] ; then
+    fail "Sysroot must be provided"
+  fi
+  try_comp_flag -march=morello
+  try_comp_flag -mabi=purecap
+  try_comp_flag --sysroot="${sysroot}"
+  try_comp_flag --target=aarch64-linux-musl_purecap
+else
+  try_comp_flag -march=morello+c64
+  try_comp_flag -mabi=purecap
+fi
+
+#linker flags
+for flag in ${LFLAGS}; do
+  try_lflag lflags "${flag}"
+done
+
+if [[ "${family}" == "clang" ]] ; then
+  try_lflag lflags -march=morello
+  try_lflag lflags -mabi=purecap
+  try_lflag lflags -fuse-ld=lld
+  try_lflag lflags --sysroot="${sysroot}"
+  try_lflag lflags --target=aarch64-linux-musl_purecap
+else
+  try_lflag lflags -march=morello+c64
+    try_lflag lflags -mabi=purecap
+fi
+
+# generate makefile
+cat <<EOF > config.make
+override CC = ${CC}
+override CXX = ${CXX}
+override CFLAGS = ${cflags} -MMD
+override CXXFLAGS = ${cxxflags} -MMD
+override LFLAGS = ${lflags}
+override COMPILER_FAMILY = ${family}
+override CLANG_SYSROOT = ${sysroot}
+override BUILD = ${build}
+override OBJDIR = ${build}/objects
+override BINDIR = ${build}/bin
+override LIBDIR = ${build}/lib
+EOF
