@@ -10,8 +10,7 @@ override free_objects := \
 	$(OBJDIR)/$(free_project)/src/syscalls.c.o \
 	$(OBJDIR)/$(free_project)/src/init.c.o \
 	$(OBJDIR)/$(free_project)/src/printf.c.o \
-	$(OBJDIR)/$(free_project)/src/string.c.o \
-	$(OBJDIR)/$(free_project)/src/morello.c.o
+	$(OBJDIR)/$(free_project)/src/string.c.o
 
 override free_objfiles := $(free_objects)
 override free_objfiles += $(OBJDIR)/$(free_project)/listauxv.c.o
@@ -29,9 +28,11 @@ ifeq ($(COMPILER_FAMILY),clang)
 override FREE_LFLAGS += -Wl,--local-caprelocs=elf
 endif
 
-$(free_objfiles): CFLAGS = $(FREE_CFLAGS) -nostdinc -ffreestanding -I$(free_curdir)/include
+$(free_objfiles): CFLAGS = $(FREE_CFLAGS) -nostdinc -ffreestanding -I$(free_curdir)/include -I$(free_curdir)/../util
 
-$(BINDIR)/%: $(OBJDIR)/$(free_project)/%.c.o $(free_objects)
+$(OBJDIR)/$(free_project)/selftest.c.o: CFLAGS += -I$(free_curdir)/../util
+
+$(BINDIR)/%: $(OBJDIR)/$(free_project)/%.c.o $(free_objects) $(OBJDIR)/libutil.a
 	$(CC) -nostdlib -ffreestanding $(FREE_LFLAGS) $^ -o $@ -static
 
 $(free_objfiles): $(free_this)

@@ -7,6 +7,7 @@ $(error "Run configure to generate config.make")
 endif
 
 include config.make
+include macros.make
 
 override C_SOURCES = $(wildcard src/*/*.c) $(wildcard src/*/*/*.c)
 override CXX_SOURCES = $(wildcard src/*/*.cpp) $(wildcard src/*/*/*.cpp)
@@ -19,8 +20,10 @@ override OBJDIRS = $(sort $(dir $(OBJECTS)))
 main:
 
 # include subprojects here
+include src/util/util.make
 include src/hello/hello.make
 include src/freestanding/free.make
+include src/compartments/cmpt.make
 
 # common compilation rules
 $(OBJDIR)/%.c.o: src/%.c | $(OBJDIRS)

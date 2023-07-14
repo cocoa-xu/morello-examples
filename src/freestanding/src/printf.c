@@ -242,7 +242,7 @@ static int printf_core(output_fun_t *fn, void *h, const char *fmt, va_list args)
                                     ssize_t cap_offset = (ssize_t)__builtin_cheri_offset_get(cap);
                                     size_t cap_length = morello_get_length(cap);
                                     char capstr[128];
-                                    char perm[18];
+                                    char perm[19];
                                     char seal[5];
                                     int sz = sprintf(capstr, "%016lx %c [%016lx:%016lx) %s %-4s %ld of %lu",
                                         cap_addr, tag ? '1' : '0', cap_base, cap_limit,

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-override project = $(notdir $(realpath $(dir $(lastword $(MAKEFILE_LIST)))))
+override hello_project = $(notdir $(realpath $(dir $(lastword $(MAKEFILE_LIST)))))
 
 ifeq (clang,$(COMPILER_FAMILY))
 override HELLO_LFLAGS = -lunwind -lc++abi -Wl,-warning-limit=1
@@ -12,8 +12,8 @@ endif
 
 main: $(BINDIR)/hello
 
-$(BINDIR)/hello: $(OBJDIR)/$(project)/hello.c.o | $(BINDIR)
+$(BINDIR)/hello: $(OBJDIR)/$(hello_project)/hello.c.o | $(BINDIR)
 	$(CC) $(LFLAGS) $^ -o $@ -static
 
-$(BINDIR)/hellocpp: $(OBJDIR)/$(project)/hello.cpp.o | $(BINDIR)
+$(BINDIR)/hellocpp: $(OBJDIR)/$(hello_project)/hello.cpp.o | $(BINDIR)
 	$(CXX) $(LFLAGS) $^ -o $@ $(HELLO_LFLAGS) -static

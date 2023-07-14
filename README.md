@@ -5,12 +5,14 @@ for Morello and its applications. The aim of these examples is to show
 various features and properties of Morello and provide an easy-to-start
 codebase for learning and experimentation.
 
-The examples included so far:
+The examples included so far are listed below. It is recommended to go
+through them in this order:
 
  - Simple hello world.
- - A series of freestanding apps that are deliberately safe: see
+ - A series of freestanding apps that are deliberately "safe": see
    [readme][src/freestanding/README.md] for more details.
- - TBD
+ - Several compartmentalisation implementations with relevant test
+   applications: see [readme][src/compartments/README.md].
 
 ## How to build
 
