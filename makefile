@@ -49,3 +49,9 @@ $(OBJDIRS):
 
 $(BINDIR) $(LIBDIR):
 	@mkdir -p $@
+
+# tests
+
+include test/test.make
+
+.PHONY: main clean distclean
