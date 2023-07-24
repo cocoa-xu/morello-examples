@@ -283,9 +283,37 @@ mitigate a security vulnerability that rely on corrupting upper stack frames.
 
 The [nestedcmpt.c][nestedcmpt.c] shows example of one compartment calling another.
 
-# Other Morello Domain Switches
+## Other Morello Domain Switches
 
-TBD
+In addition to the "Branch to Sealed Capability Pair", Morello provides two more similar
+compartment switch primitives: "Load Pair and Branch" and "Unseal, Load and Branch". They
+are considered below. Note that functionally these examples are more simple compared to
+the BSP example above (e.g. there is no register sanitisation or permission adjustment in
+the target function pointer), however they still provide basic features like isolation of
+stack.
+
+Due to simplicity of creation of capability pairs for these two compartment switches, they
+are susceptible to forgery of compartment handles, unlike the BSP switch.
+
+### Load Pair and Branch
+
+This switch uses the "Load Pair of capabilities and Branch (with Link)" instructions. They
+operate on a capability that is sealed with a special (fixed) `LPB` type:
+
+    LDPBR C29, [<Cn|CSP>]
+
+During the execution of this instruction the base capability `Cn` is unsealed and two more
+capabilities are loaded from its address. These two capabilities form a pair of data and
+code capabilities. As soon as we have the capability pair, the rest is similar to the BSP
+switch implementation. Refer to the [hellolpb.c][hellolpb.c] example for more details.
+
+This LPB implementation stores caller's stack on itself and then puts LPB-sealed capability
+that gives access to the return capability pair in one of the callee-saved registers. If
+the underlying target function is PCS-compliant, this register will be preserved. However,
+we do check if it's still sealed. This is useful because the `LDPBR` instruction does not
+require the base capability to be sealed. Checking for the actual object type is unnecessary
+because if it's not `LPB` the following Load Pair and Branch instruction would not unseal
+capability and the following memory access will fail.
 
 ## Protecting Private Data
 

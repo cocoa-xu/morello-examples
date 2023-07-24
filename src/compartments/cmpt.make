@@ -6,21 +6,33 @@ override cmpt_this := $(lastword $(MAKEFILE_LIST))
 override cmpt_curdir := $(realpath $(dir $(cmpt_this)))
 override cmpt_project := $(notdir $(cmpt_curdir))
 
-override cmpt_bsp_objects := \
-	$(OBJDIR)/$(cmpt_project)/src/manager.c.o
-
-override cmpt_bsp_objfiles = $(cmpt_bsp_objects) \
+override cmpt_bsp_objfiles = \
+	$(OBJDIR)/$(cmpt_project)/src/manager.c.o \
 	$(OBJDIR)/$(cmpt_project)/hellobsp.c.o \
 	$(OBJDIR)/$(cmpt_project)/hackpwd.c.o \
-	$(OBJDIR)/$(cmpt_project)/nestedcmpt.c.o
+	$(OBJDIR)/$(cmpt_project)/nestedcmpt.c.o \
+	$(OBJDIR)/$(cmpt_project)/hellolpb.c.o \
+	$(OBJDIR)/$(cmpt_project)/src/lpb.S.o
 
 $(cmpt_bsp_objfiles): CFLAGS += -I$(cmpt_curdir)/include -I$(cmpt_curdir)/../util
 
-main: $(BINDIR)/hellobsp $(BINDIR)/hackpwd $(BINDIR)/nestedcmpt
+main: $(BINDIR)/hellobsp
+main: $(BINDIR)/hackpwd
+main: $(BINDIR)/nestedcmpt
+main: $(BINDIR)/hellolpb
 
 $(OBJDIR)/$(cmpt_project)/hackpwd.c.o: CFLAGS += -O0
 
-$(BINDIR)/%: $(OBJDIR)/$(cmpt_project)/%.c.o $(cmpt_bsp_objects) $(OBJDIR)/libutil.a
+$(BINDIR)/hellobsp: $(OBJDIR)/$(cmpt_project)/hellobsp.c.o $(OBJDIR)/$(cmpt_project)/src/manager.c.o $(OBJDIR)/libutil.a
+	$(CC) $(LFLAGS) $^ -o $@ -static
+
+$(BINDIR)/hackpwd: $(OBJDIR)/$(cmpt_project)/hackpwd.c.o $(OBJDIR)/$(cmpt_project)/src/manager.c.o $(OBJDIR)/libutil.a
+	$(CC) $(LFLAGS) $^ -o $@ -static
+
+$(BINDIR)/nestedcmpt: $(OBJDIR)/$(cmpt_project)/nestedcmpt.c.o $(OBJDIR)/$(cmpt_project)/src/manager.c.o $(OBJDIR)/libutil.a
+	$(CC) $(LFLAGS) $^ -o $@ -static
+
+$(BINDIR)/hellolpb: $(OBJDIR)/$(cmpt_project)/hellolpb.c.o $(OBJDIR)/$(cmpt_project)/src/lpb.S.o $(OBJDIR)/libutil.a
 	$(CC) $(LFLAGS) $^ -o $@ -static
 
 $(cmpt_bsp_objfiles): $(cmpt_this)

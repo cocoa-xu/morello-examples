@@ -10,10 +10,17 @@ include config.make
 include macros.make
 
 override C_SOURCES = $(wildcard src/*/*.c) $(wildcard src/*/*/*.c)
+override ASM_SOURCES = $(wildcard src/*/*.S) $(wildcard src/*/*/*.S)
 override CXX_SOURCES = $(wildcard src/*/*.cpp) $(wildcard src/*/*/*.cpp)
 
-override SOURCES = $(C_SOURCES) $(CXX_SOURCES)
-override OBJECTS = $(C_SOURCES:src/%.c=$(OBJDIR)/%.c.o) $(CXX_SOURCES:src/%.cpp=$(OBJDIR)/%.cpp.o)
+override SOURCES  = $(C_SOURCES)
+override SOURCES += $(ASM_SOURCES)
+override SOURCES += $(CXX_SOURCES)
+
+override OBJECTS  = $(C_SOURCES:src/%.c=$(OBJDIR)/%.c.o)
+override OBJECTS += $(ASM_SOURCES:src/%.S=$(OBJDIR)/%.S.o)
+override OBJECTS += $(CXX_SOURCES:src/%.cpp=$(OBJDIR)/%.cpp.o)
+
 override DEPENDS = $(OBJECTS:%.o=%.d)
 override OBJDIRS = $(sort $(dir $(OBJECTS)))
 
@@ -27,6 +34,9 @@ include src/compartments/cmpt.make
 
 # common compilation rules
 $(OBJDIR)/%.c.o: src/%.c | $(OBJDIRS)
+	$(CC) -c $(CFLAGS) $< -o $@
+
+$(OBJDIR)/%.S.o: src/%.S | $(OBJDIRS)
 	$(CC) -c $(CFLAGS) $< -o $@
 
 $(OBJDIR)/%.cpp.o: src/%.cpp | $(OBJDIRS)
