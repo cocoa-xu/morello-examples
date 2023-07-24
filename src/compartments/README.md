@@ -315,6 +315,21 @@ require the base capability to be sealed. Checking for the actual object type is
 because if it's not `LPB` the following Load Pair and Branch instruction would not unseal
 capability and the following memory access will fail.
 
+### Unseal, Load and Branch
+
+This switch uses another memory indirect branch instruction that operates on a capability
+sealed with a special object type `LB`:
+
+    BR [C29, #<imm>]
+
+This instruction unseals the capability and loads destination branch address at the given
+offset. The unseal copy is stored in the `C29` register. The latter is the data part of the
+capability pair and the destination capability loaded at the offset is the code part of it.
+Refer to the [hellolb.c][hellolb.c] example for more details.
+
+This ULB implementation also uses caller's stack to store the return capability pair and
+relies on callee-saved register for the return domain transition to work.
+
 ## Protecting Private Data
 
 TBD

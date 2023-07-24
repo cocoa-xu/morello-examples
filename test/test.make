@@ -13,5 +13,6 @@ test:
 	$(TEST_RUNNER) $(BINDIR)/hellobsp
 	$(TEST_RUNNER) $(BINDIR)/nestedcmpt || test $$? -eq 3
 	$(TEST_RUNNER) $(BINDIR)/hellolpb
+	$(TEST_RUNNER) $(BINDIR)/hellolb
 
 .PHONY: test

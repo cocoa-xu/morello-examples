@@ -14,3 +14,8 @@
 
 #define END(fn) \
     .size fn, .-fn;
+
+#define DEC(sym) \
+    .global sym; \
+    .type sym,%function; \
+    .size sym,16;

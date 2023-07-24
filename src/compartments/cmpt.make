@@ -12,7 +12,9 @@ override cmpt_bsp_objfiles = \
 	$(OBJDIR)/$(cmpt_project)/hackpwd.c.o \
 	$(OBJDIR)/$(cmpt_project)/nestedcmpt.c.o \
 	$(OBJDIR)/$(cmpt_project)/hellolpb.c.o \
-	$(OBJDIR)/$(cmpt_project)/src/lpb.S.o
+	$(OBJDIR)/$(cmpt_project)/src/lpb.S.o \
+	$(OBJDIR)/$(cmpt_project)/hellolb.c.o \
+	$(OBJDIR)/$(cmpt_project)/src/lb.S.o
 
 $(cmpt_bsp_objfiles): CFLAGS += -I$(cmpt_curdir)/include -I$(cmpt_curdir)/../util
 
@@ -20,6 +22,7 @@ main: $(BINDIR)/hellobsp
 main: $(BINDIR)/hackpwd
 main: $(BINDIR)/nestedcmpt
 main: $(BINDIR)/hellolpb
+main: $(BINDIR)/hellolb
 
 $(OBJDIR)/$(cmpt_project)/hackpwd.c.o: CFLAGS += -O0
 
@@ -33,6 +36,9 @@ $(BINDIR)/nestedcmpt: $(OBJDIR)/$(cmpt_project)/nestedcmpt.c.o $(OBJDIR)/$(cmpt_
 	$(CC) $(LFLAGS) $^ -o $@ -static
 
 $(BINDIR)/hellolpb: $(OBJDIR)/$(cmpt_project)/hellolpb.c.o $(OBJDIR)/$(cmpt_project)/src/lpb.S.o $(OBJDIR)/libutil.a
+	$(CC) $(LFLAGS) $^ -o $@ -static
+
+$(BINDIR)/hellolb: $(OBJDIR)/$(cmpt_project)/hellolb.c.o $(OBJDIR)/$(cmpt_project)/src/lb.S.o $(OBJDIR)/libutil.a
 	$(CC) $(LFLAGS) $^ -o $@ -static
 
 $(cmpt_bsp_objfiles): $(cmpt_this)
