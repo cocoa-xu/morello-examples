@@ -10,9 +10,9 @@ through them in this order:
 
  - Simple hello world.
  - A series of freestanding apps that are deliberately "safe": see
-   [readme][src/freestanding/README.md] for more details.
+   [readme](src/freestanding/README.md) for more details.
  - Several compartmentalisation implementations with relevant test
-   applications: see [readme][src/compartments/README.md].
+   applications: see [readme](src/compartments/README.md).
 
 ## How to build
 
@@ -20,7 +20,7 @@ Prerequisites:
 
  - Morello [GCC toolchain (with purecap Glibc)][gnu] or [Morello LLVM][llvm]
    (with [purecap Musl][musl]).
- - Bash 5.2 and Make 4.3.
+ - Bash 5.x and Make 4.x.
 
 To compile and link the examples, run configure and then make:
 
@@ -52,7 +52,7 @@ the download details.
 
 ## License
 
-[BSD 3-Clause "New" or "Revised" License][LICENCE.txt] (SPDX-License-Identifier:
+[BSD 3-Clause "New" or "Revised" License](LICENCE.txt) (SPDX-License-Identifier:
 BSD-3-Clause).
 
 [gnu]: https://developer.arm.com/downloads/-/arm-gnu-toolchain-for-morello-downloads

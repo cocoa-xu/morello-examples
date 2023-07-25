@@ -50,7 +50,7 @@ These examples don't use any standard C library, therefore some basic
 utilities are implemented here. This includes the following:
 
 - Static initialisation code: to instantiate capabilities at runtime
-  (see (Morello EFL spec)[elf] for details). This includes functions
+  (see [Morello EFL spec][elf] for details). This includes functions
   `init_morello_relative` and deprecated `init_cap_relocs`.
 - Syscall wrappers for most necessary system calls like `EXIT_GROUP`
   and `WRITE`.

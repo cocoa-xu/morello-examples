@@ -20,7 +20,7 @@ returning from it back to the caller (i.e. while we are "in a compartment") can
 be deterministically derived from only:
 
  - Input arguments and the result.
- - Ambient capabilities (PCC, CSP, CTPIDR_EL0 etc).
+ - Ambient capabilities (`PCC`, `CSP`, `CTPIDR_EL0` etc).
  - Memory allocations (malloc, mmap, etc) that are supposed to be "private" or
    "local" for each domain.
 
@@ -42,7 +42,7 @@ and performance point of view.
 Domain transition should be as simple as possible to minimise performance overhead
 and possible attack surface. Ideally, it should be atomic, however this is not
 feasible given the extent of things that ought to happen during the transition.
-This suggests that we will need a **trampoline**, that is, code that implements
+This suggests that we will need a *trampoline*, that is, code that implements
 the logic of the transition, and optionally does checks or enforces rules. In an
 ideal case trampoline code can be reduced to a single branch instruction however
 it might be very difficult to enforce any security properties in this case. This
@@ -51,24 +51,27 @@ trampoline is one of the key components of any compartment implementation.
 Depending on the implementation, trampoline code may have a glimpse into memory
 of both the caller and the callee, that is why it might be possible to say that
 while the execution point is inside the trampoline code, we are running in a
-"privileged state".
+*privileged state*. It can be defined and implemented in various ways, but, in a
+nutshell, it should suffice to say that code running in such state has access to
+operations on compartments and (optionally) may have access to each compartment's
+memory.
 
 In general, the behaviour of the trampoline may need to be controlled or adjusted
 given the actual requirements for the given inter-domain boundary. This may be done
-via the **compartment parameters** that are associate with a particular **compartment
-instance**. In addition, we will also need to hold capabilities for various memory
+via the *compartment parameters* that are associate with a particular *compartment
+instance*. In addition, we will also need to hold capabilities for various memory
 allocations that back up our domain partitioning (for example, independent stacks
 for each compartment). Finally, since domain transition is associated with a branch
 to some executable address, we will also need corresponding executable capability
-to be attached to a compartment instance. All of the above comprises **compartment
-descriptor** which is another key component we need to consider.
+to be attached to a compartment instance. All of the above comprises *compartment
+descriptor* which is another key component we need to consider.
 
 A compartment descriptor may be implemented in various ways, but it will always
 hold at least two capabilities: the data capability and the code capability. They
 are sometimes referred to as capability pair.
 
 Each compartment instance can in theory be self-contained and independent, however
-it might be more practical to have another component called **compartment manager**
+it might be more practical to have another component called *compartment manager*
 that would be able to control lifecycle of compartments, for example dispense new
 instances, deallocated and destroy them after use, and so on. Ideally, compartment
 manager should not have access to the memory attached to each compartment it manages.
@@ -86,7 +89,7 @@ various compartment attacks, such as:
    of an already existing compartment.
  - Altering behaviour of the compartment trampoline.
 
-We will refer to such a sealed capability as **compartment handle**.
+We will refer to such a sealed capability as *compartment handle*.
 
 It should be impossible to explicitly unseal compartment handles. This means that
 there must be no valid unsealed capability with the `UNSEAL` permission and with value
@@ -121,7 +124,7 @@ On success, this instruction puts unsealed version of the data capability in the
 register and jumps to the address in the code capability unsealing it as well.
 
 PCuABI Linux provides a way to obtain a sealing capability that can be used to seal
-code and data capabilities with some object type, the AT_CHERI_SEAL_CAP auxv element
+code and data capabilities with some object type, the `AT_CHERI_SEAL_CAP` auxv element
 that is accessible via the new `getauxptr` function:
 
     __sealer = cheri_perms_and(getauxptr(AT_CHERI_SEAL_CAP), PERM_SEAL);
@@ -157,7 +160,7 @@ because we can use compartment handle in the same way as the wrapped function:
     void *res = fun_in_cmpt(ptr);
 
 A new compartment instance is created for some function pointer that we refer to as a
-**target** function. This is supposed to be a function that will be executed inside the
+*target* function. This is supposed to be a function that will be executed inside the
 compartment. For brevity we only use functions that take one pointer as an argument and
 return a pointer for the result. The support for an arbitrary amount of argument is
 trivial using the new Morello ABI for variadic functions and is left as an exercise for
@@ -169,7 +172,7 @@ The current implementation supports the following parameters:
  - A few optional parameters that illustrate the idea of how we may alter the
    behaviour of the compartment.
 
-Refer to the [hellobsp.c][hellobsp.c] example application for the most simple use case.
+Refer to the [hellobsp.c](hellobsp.c) example application for the most simple use case.
 
 ### Implementation Details
 
@@ -278,10 +281,10 @@ would be shared across multiple threads.
 
 ### Examples
 
-The [hackpwd.c][hackpwd.c] example shows how BSP compartmentalisation can be used to
+The [hackpwd.c](hackpwd.c) example shows how BSP compartmentalisation can be used to
 mitigate a security vulnerability that rely on corrupting upper stack frames.
 
-The [nestedcmpt.c][nestedcmpt.c] shows example of one compartment calling another.
+The [nestedcmpt.c](nestedcmpt.c) shows example of one compartment calling another.
 
 ## Other Morello Domain Switches
 
@@ -305,7 +308,7 @@ operate on a capability that is sealed with a special (fixed) `LPB` type:
 During the execution of this instruction the base capability `Cn` is unsealed and two more
 capabilities are loaded from its address. These two capabilities form a pair of data and
 code capabilities. As soon as we have the capability pair, the rest is similar to the BSP
-switch implementation. Refer to the [hellolpb.c][hellolpb.c] example for more details.
+switch implementation. Refer to the [hellolpb.c](hellolpb.c) example for more details.
 
 This LPB implementation stores caller's stack on itself and then puts LPB-sealed capability
 that gives access to the return capability pair in one of the callee-saved registers. If
@@ -325,7 +328,7 @@ sealed with a special object type `LB`:
 This instruction unseals the capability and loads destination branch address at the given
 offset. The unseal copy is stored in the `C29` register. The latter is the data part of the
 capability pair and the destination capability loaded at the offset is the code part of it.
-Refer to the [hellolb.c][hellolb.c] example for more details.
+Refer to the [hellolb.c](hellolb.c) example for more details.
 
 This ULB implementation also uses caller's stack to store the return capability pair and
 relies on callee-saved register for the return domain transition to work.
