@@ -14,7 +14,9 @@ override cmpt_bsp_objfiles = \
 	$(OBJDIR)/$(cmpt_project)/hellolpb.c.o \
 	$(OBJDIR)/$(cmpt_project)/src/lpb.S.o \
 	$(OBJDIR)/$(cmpt_project)/hellolb.c.o \
-	$(OBJDIR)/$(cmpt_project)/src/lb.S.o
+	$(OBJDIR)/$(cmpt_project)/src/lb.S.o \
+	$(OBJDIR)/$(cmpt_project)/privdata.c.o \
+	$(OBJDIR)/$(cmpt_project)/src/switch.S.o
 
 $(cmpt_bsp_objfiles): CFLAGS += -I$(cmpt_curdir)/include -I$(cmpt_curdir)/../util
 
@@ -23,6 +25,7 @@ main: $(BINDIR)/hackpwd
 main: $(BINDIR)/nestedcmpt
 main: $(BINDIR)/hellolpb
 main: $(BINDIR)/hellolb
+main: $(BINDIR)/privdata
 
 $(OBJDIR)/$(cmpt_project)/hackpwd.c.o: CFLAGS += -O0
 
@@ -39,6 +42,9 @@ $(BINDIR)/hellolpb: $(OBJDIR)/$(cmpt_project)/hellolpb.c.o $(OBJDIR)/$(cmpt_proj
 	$(CC) $(LFLAGS) $^ -o $@ -static
 
 $(BINDIR)/hellolb: $(OBJDIR)/$(cmpt_project)/hellolb.c.o $(OBJDIR)/$(cmpt_project)/src/lb.S.o $(OBJDIR)/libutil.a
+	$(CC) $(LFLAGS) $^ -o $@ -static
+
+$(BINDIR)/privdata: $(OBJDIR)/$(cmpt_project)/privdata.c.o $(OBJDIR)/$(cmpt_project)/src/switch.S.o $(OBJDIR)/libutil.a
 	$(CC) $(LFLAGS) $^ -o $@ -static
 
 $(cmpt_bsp_objfiles): $(cmpt_this)

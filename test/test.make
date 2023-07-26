@@ -14,5 +14,6 @@ test:
 	$(TEST_RUNNER) $(BINDIR)/nestedcmpt || test $$? -eq 3
 	$(TEST_RUNNER) $(BINDIR)/hellolpb
 	$(TEST_RUNNER) $(BINDIR)/hellolb
+	$(TEST_RUNNER) $(BINDIR)/privdata
 
 .PHONY: test

@@ -335,4 +335,123 @@ relies on callee-saved register for the return domain transition to work.
 
 ## Protecting Private Data
 
-TBD
+Above we touched on the topic of spatial memory isolation but mostly focused on isolation
+of stack. The heap memory allocations should be isolated (that is, well-bounded) by the
+respective allocators. There are also PC-relative accesses however. One way of introducing
+isolation along this axis is setting bounds for the function pointers from which PCC will
+be derived upon successful branching. However, due to restrictions of the representability
+of bounds and the fact that bounds of a capability cover a continuous region of memory (so,
+we can't have a "selective" capability that covers two or more disjoined memory regions),
+it might be difficult to achieve in practice. PCC bounds restrictions may also introduce
+problems for code relocation.
+
+Instead, we may try to invert the problem: what if we have an object (for example, a global
+variable) that we want to be unusable for any code except for a finite set of "permitted"
+functions. The implementation of a solution to this problem is described below.
+
+Suppose we have the following simple use case:
+
+    typedef struct {
+        unsigned secret;
+        // ...
+    } priv_data_t;
+
+    static priv_data_t *priv_data;
+
+    static void malware()
+    {
+        printf("your secret is: %u\n", priv_data->secret);
+    }
+
+    static void init();
+
+    int main(int argc, char *argv[])
+    {
+        // init private data:
+        init();
+        // use private data:
+        const char *encrypted = encrypt_message(..., argv[1], ...);
+        printf("encrypted message: %s\n", encrypted);
+        // malicious access to private data:
+        malware();
+        return 0;
+    }
+
+Here we have a pointer to a global object that may contain some secret data that we should
+be able to use but at the same time we don't want it to be accessed by any malicious code.
+To prevent this, we will use capability sealing: after initialising our global object we
+will protect it by sealing the only capability that points to it:
+
+    static void protect()
+    {
+        priv_data = cheri_seal(priv_data, ...);
+    }
+
+    int main(int argc, char *argv[])
+    {
+        // init private data:
+        init();
+        // protect:
+        protect();
+        // ...
+        return 0;
+    }
+
+The `malware` function will obviously fail after this change, but so will our good function
+`encrypt_message`. We need a way to unseal `priv_data` inside the permitted function. Since
+this is a data pointer (as opposed to a sentry or any other sealed function pointer), one way
+to unseal it is to use an un-sealer capability. However, if we introduce such a capability,
+we'd have to figure out a way to protect it as well, which brings us back to square one.
+
+The Branch to Sealed Capability Pair instruction combines unsealing during branch operation
+with unsealing of a data pointer:
+
+    BRS C29, <code>, <data>
+
+We can use it here similarly to how we used it for the BSP compartmentalisation above. To do
+this we will modify our `protect` function to take a pointer to the function that is allowed
+to access private data via `priv_data` and return a pointer to a function of the same type.
+The returned pointer (capability) can be used in the same way as the original function.
+
+We use `mmap` with the `PROT_CAP_INVOKE` protection flag to generate both the data and the code
+capabilities to have the `PERM_CAP_INVOKE` permission set. We copy the switch code (defined in
+[switch.S](src/switch.S)) into the code allocation and then append some data required for the
+switch to work: the target function pointer and two BSP-sealed function pointers that we will
+use for the `BRS` instruction. After this we set the bounds and reduce permissions to the
+required minimum. We then RB-seal the code pointer with the offset `+1` for the C64 ISA mode
+and return it.
+
+We also need to modify the interface of our function `encrypt_message`: instead of using the
+global variable implicitly it will now take additional argument of the same type. However,
+all invocations of the `encrypt_message` function will use the global variable which refers
+to a sealed capability. The switch code will use this extra argument from the respective
+operand of the `BRS` instruction.
+
+As a result, the global variable will contain sealed capability and accessing it from any code
+that is not explicitly allowed to access it will not lead to subsequent access to the private
+data. Because we replace one function pointer with another of the same type, we don't need to
+make any significant changes to the existing code.
+
+    int main(int argc, char *argv[])
+    {
+        // init private data:
+        init();
+        // protect:
+        good_fun_t *fn = protect(encrypt_message);
+        // use the wrapped function:
+        const char *encrypted = fn(priv_data,... , argv[1], ...);
+        printf("encrypted message: %s\n", encrypted);
+        // ...
+        return 0;
+    }
+
+It is possible, however, that the unsealed copy of the capability passed as argument to the
+good function will remain spilled on stack. To mitigate this, we can allocate a private stack
+and use it for the duration of the good function execution. In this case we will need one
+more `BRS` instruction after returning from the target function. This is not implemented in
+the example but seems to be simple enough, so we'll leave it as an exercise for the reader.
+
+Finally, in the example code in [privdata.c](privdata.c) we have additional properties one of
+which is the owning capability that was returned by `mmap` when we allocated memory for the
+private data. It will also be protected and another permitted function can be used to access
+it for deallocation. This is also not implemented yet but should also be easy enough to do.
