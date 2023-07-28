@@ -17,7 +17,9 @@ override free_objfiles += $(OBJDIR)/$(free_project)/listauxv.c.o
 override free_objfiles += $(OBJDIR)/$(free_project)/selftest.c.o
 override free_objfiles += $(OBJDIR)/$(free_project)/hackfmt.c.o
 
-main: $(BINDIR)/listauxv $(BINDIR)/selftest $(BINDIR)/hackfmt
+main: $(BINDIR)/listauxv
+main: $(BINDIR)/selftest
+main: $(BINDIR)/hackfmt
 
 override FREE_CFLAGS := $(filter-out --sysroot=%,$(CFLAGS))
 override FREE_CFLAGS := $(filter-out --target=%,$(FREE_CFLAGS))
@@ -30,9 +32,13 @@ endif
 
 $(free_objfiles): CFLAGS = $(FREE_CFLAGS) -nostdinc -ffreestanding -I$(free_curdir)/include -I$(free_curdir)/../util
 
+ifeq ($(COMPILER_FAMILY),gcc)
+$(OBJDIR)/$(free_project)/src/printf.c.o: CFLAGS += -Wno-stringop-overflow
+endif
+
 $(OBJDIR)/$(free_project)/selftest.c.o: CFLAGS += -I$(free_curdir)/../util
 
-$(BINDIR)/%: $(OBJDIR)/$(free_project)/%.c.o $(free_objects) $(OBJDIR)/libutil.a
+$(BINDIR)/%: $(OBJDIR)/$(free_project)/%.c.o $(free_objects) $(OBJDIR)/libutil.a | $(BINDIR)
 	$(CC) -nostdlib -ffreestanding $(FREE_LFLAGS) $^ -o $@ -static
 
 $(free_objfiles): $(free_this)

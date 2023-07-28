@@ -8,6 +8,8 @@ Usage: ${0} [options]... [VAR=VALUE]...
 Configuration:
   --sysroot=DIR       sysroot directory for Clang compiler
   --build=DIR         path to the build folder [build]
+  --enable-debug      enable compiler options for debugging
+  --disable-optimise  disable optimisation
 
 Environment variables:
   CC                  C compiler command
@@ -70,6 +72,8 @@ cflags=
 cxxflags=
 lflags=
 sysroot=
+debug=0
+optimise=1
 build=build
 
 # scan command line for params and variables
@@ -78,6 +82,8 @@ for arg ; do
     --help|-h) usage ;;
     --sysroot=*) sysroot=${arg#*=} ;;
     --build=*) build=${arg#*=} ;;
+    --enable-debug) debug=1 ;;
+    --disable-optimise) optimise=0 ;;
     -* ) echo "$0: unknown option ${arg}" ;;
     CC=*) CC=${arg#*=} ;;
     CFLAGS=*) CFLAGS=${arg#*=} ;;
@@ -117,6 +123,11 @@ try_comp_flag -Wall
 try_comp_flag -Werror
 try_cflag cflags -std=c17
 try_cxxflag cxxflags -std=c++17
+if [[ "${debug}" == "1" ]]; then
+  try_comp_flag -g
+elif [[ "${optimise}" == "1" ]]; then
+  try_comp_flag -O3
+fi
 if [[ "${family}" == "clang" ]] ; then
   if [[ "${sysroot}" == "" ]] ; then
     fail "Sysroot must be provided"
@@ -163,4 +174,5 @@ override BUILD = ${build}
 override OBJDIR = ${build}/objects
 override BINDIR = ${build}/bin
 override LIBDIR = ${build}/lib
+override DEBUG = ${debug}
 EOF

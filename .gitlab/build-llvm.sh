@@ -35,7 +35,7 @@ branch=morello/master
 git fetch -- ${repo} +refs/heads/${branch}:refs/remotes/origin/${branch}
 git checkout origin/${branch} -b ${branch}
 CC=${LLVM_PREFIX}/bin/clang ./configure --prefix=${MUSL_PREFIX} --target=aarch64-linux-musl_purecap
-make -j4
+make -j8
 make install
 popd
 

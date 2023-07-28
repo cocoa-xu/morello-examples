@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
     printf("fn:             %s\n", cap_to_str(NULL, fn));
 
     const char *message = "hello morello...";
-    char buffer[17];
+    char buffer[17] = {};
     const char *encrypted = fn(priv_data, buffer, message, 16);
 
     printf("secret message: %s\n", message);
@@ -160,6 +160,9 @@ static const char *encrypt_message(const priv_data_t *priv, char *out, const cha
         dst++;
         src++;
         processed += sizeof(unsigned);
+    }
+    if (morello_in_bounds(out + processed)) {
+        out[processed] = '\0';
     }
     return out;
 }

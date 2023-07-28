@@ -14,7 +14,7 @@ main: $(OBJDIR)/libutil.a
 
 $(util_objects): CFLAGS += -nostdinc
 
-$(OBJDIR)/libutil.a: $(util_objects)
+$(OBJDIR)/libutil.a: $(util_objects) | $(LIBDIR)
 	$(create-archive)
 
 $(util_objects): $(util_this)

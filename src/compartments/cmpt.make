@@ -6,7 +6,7 @@ override cmpt_this := $(lastword $(MAKEFILE_LIST))
 override cmpt_curdir := $(realpath $(dir $(cmpt_this)))
 override cmpt_project := $(notdir $(cmpt_curdir))
 
-override cmpt_bsp_objfiles = \
+override cmpt_objfiles = \
 	$(OBJDIR)/$(cmpt_project)/src/manager.c.o \
 	$(OBJDIR)/$(cmpt_project)/hellobsp.c.o \
 	$(OBJDIR)/$(cmpt_project)/hackpwd.c.o \
@@ -18,7 +18,7 @@ override cmpt_bsp_objfiles = \
 	$(OBJDIR)/$(cmpt_project)/privdata.c.o \
 	$(OBJDIR)/$(cmpt_project)/src/switch.S.o
 
-$(cmpt_bsp_objfiles): CFLAGS += -I$(cmpt_curdir)/include -I$(cmpt_curdir)/../util
+$(cmpt_objfiles): CFLAGS += -I$(cmpt_curdir)/include -I$(cmpt_curdir)/../util
 
 main: $(BINDIR)/hellobsp
 main: $(BINDIR)/hackpwd
@@ -27,24 +27,24 @@ main: $(BINDIR)/hellolpb
 main: $(BINDIR)/hellolb
 main: $(BINDIR)/privdata
 
-$(OBJDIR)/$(cmpt_project)/hackpwd.c.o: CFLAGS += -O0
+$(OBJDIR)/$(cmpt_project)/hackpwd.c.o: CFLAGS := $(filter-out -O%,$(CFLAGS)) -O0 -I$(cmpt_curdir)/include -I$(cmpt_curdir)/../util
 
-$(BINDIR)/hellobsp: $(OBJDIR)/$(cmpt_project)/hellobsp.c.o $(OBJDIR)/$(cmpt_project)/src/manager.c.o $(OBJDIR)/libutil.a
+$(BINDIR)/hellobsp: $(OBJDIR)/$(cmpt_project)/hellobsp.c.o $(OBJDIR)/$(cmpt_project)/src/manager.c.o $(OBJDIR)/libutil.a | $(BINDIR)
 	$(CC) $(LFLAGS) $^ -o $@ -static
 
-$(BINDIR)/hackpwd: $(OBJDIR)/$(cmpt_project)/hackpwd.c.o $(OBJDIR)/$(cmpt_project)/src/manager.c.o $(OBJDIR)/libutil.a
+$(BINDIR)/hackpwd: $(OBJDIR)/$(cmpt_project)/hackpwd.c.o $(OBJDIR)/$(cmpt_project)/src/manager.c.o $(OBJDIR)/libutil.a | $(BINDIR)
 	$(CC) $(LFLAGS) $^ -o $@ -static
 
-$(BINDIR)/nestedcmpt: $(OBJDIR)/$(cmpt_project)/nestedcmpt.c.o $(OBJDIR)/$(cmpt_project)/src/manager.c.o $(OBJDIR)/libutil.a
+$(BINDIR)/nestedcmpt: $(OBJDIR)/$(cmpt_project)/nestedcmpt.c.o $(OBJDIR)/$(cmpt_project)/src/manager.c.o $(OBJDIR)/libutil.a | $(BINDIR)
 	$(CC) $(LFLAGS) $^ -o $@ -static
 
-$(BINDIR)/hellolpb: $(OBJDIR)/$(cmpt_project)/hellolpb.c.o $(OBJDIR)/$(cmpt_project)/src/lpb.S.o $(OBJDIR)/libutil.a
+$(BINDIR)/hellolpb: $(OBJDIR)/$(cmpt_project)/hellolpb.c.o $(OBJDIR)/$(cmpt_project)/src/lpb.S.o $(OBJDIR)/libutil.a | $(BINDIR)
 	$(CC) $(LFLAGS) $^ -o $@ -static
 
-$(BINDIR)/hellolb: $(OBJDIR)/$(cmpt_project)/hellolb.c.o $(OBJDIR)/$(cmpt_project)/src/lb.S.o $(OBJDIR)/libutil.a
+$(BINDIR)/hellolb: $(OBJDIR)/$(cmpt_project)/hellolb.c.o $(OBJDIR)/$(cmpt_project)/src/lb.S.o $(OBJDIR)/libutil.a | $(BINDIR)
 	$(CC) $(LFLAGS) $^ -o $@ -static
 
-$(BINDIR)/privdata: $(OBJDIR)/$(cmpt_project)/privdata.c.o $(OBJDIR)/$(cmpt_project)/src/switch.S.o $(OBJDIR)/libutil.a
+$(BINDIR)/privdata: $(OBJDIR)/$(cmpt_project)/privdata.c.o $(OBJDIR)/$(cmpt_project)/src/switch.S.o $(OBJDIR)/libutil.a | $(BINDIR)
 	$(CC) $(LFLAGS) $^ -o $@ -static
 
-$(cmpt_bsp_objfiles): $(cmpt_this)
+$(cmpt_objfiles): $(cmpt_this)
