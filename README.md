@@ -43,6 +43,14 @@ All sources are located under the `src` directory and are further grouped
 into folders, one folder for each group of examples. The main entry point
 for the build is the `makefile` in the project root.
 
+To test, use:
+
+    make test
+
+To run tests with Morello IE, add `TEST_RUNNER`:
+
+    make test TEST_RUNNER="/path/to/morelloie --"
+
 ## How to run
 
 All the example applications are intended to be used on a Morello system
