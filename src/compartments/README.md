@@ -115,7 +115,9 @@ This implementation uses the "BRS (pair of capabilities)" instruction:
 It requires a pair of capabilities with specific properties:
 
  - Both code and data capabilities are sealed with with same object type
-   that is bigger than maximum fixed object type.
+   that is bigger than maximum fixed object type `CAP_MAX_FIXED_SEAL_TYPE`.
+   On Morello, this is maximum object type `3` used for sentry-like sealed
+   function pointers: `RB` (value 1), `LPB` (value 2), and `LB` (value 3).
  - Both capabilities must have the `BRANCH_SEALED_PAIR` permission.
  - The code one should have the `EXECUTE` permission and the data capability
    should not have it.

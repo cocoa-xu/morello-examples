@@ -124,7 +124,7 @@ static void init()
     priv_data->secret = 0xcafe1e55;
     priv_data->data = cheri_perms_and(cheri_bounds_set_exact(part->data, 128), RW_PERMS);
     priv_data->owning = mem; // todo: use this owning capability for munmap
-    priv_data->sealer = __builtin_cheri_offset_increment(cheri_perms_and(getauxptr(AT_CHERI_SEAL_CAP), PERM_SEAL), 7);
+    priv_data->sealer = cheri_perms_and(getauxptr(AT_CHERI_SEAL_CAP), PERM_SEAL) + 7;
 }
 
 static void malware()
@@ -139,9 +139,9 @@ static void malware()
 
     // Try accessing private secret:
     if (cheri_is_sealed(priv_data)) {
-    printf("secret:         %s\n", "can't read secret");
+        printf("secret:         %s\n", "can't read secret");
     } else {
-    printf("secret:         %x\n", priv_data->secret);
+        printf("secret:         %x\n", priv_data->secret);
     }
 }
 
@@ -187,9 +187,9 @@ static good_fun_t *protect(good_fun_t *fn)
     size_t _sw_size = _sw_end - _sw_start;
 
     typedef struct {
-        void *target;
-        void *prot_start;
-        void *prot_end;
+        void *target;       // The "good" function
+        void *prot_start;   // BSP-sealed code pointer for BRS instruction
+        void *prot_end;     // BSP-sealed code pointer for return BRS instruction (currently unused)
     } cmpt_data_t;
 
     // Allocate memory for the switch code and the associated data:
@@ -209,6 +209,10 @@ static good_fun_t *protect(good_fun_t *fn)
     // Fill in switch data:
     data->target = cheri_is_sealed(fn) ? fn : cheri_sentry_create(fn);
     data->prot_start = cheri_seal(code + (_prot_start - _sw_start) + 1, seal);
+    // Note: we don't use prot_end yet but it can be utilised to implement
+    // a return BRS instruction that, for example, would be needed for stack
+    // switching (when the "good" function is called on an isolated stack to
+    // mitigate spilling unsealed secret capability):
     data->prot_end = cheri_seal(code + (_prot_end - _sw_start) + 1, seal);
 
     // Change memory protection flags:

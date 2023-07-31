@@ -27,8 +27,8 @@ __prot_start:
     mov     c0, c29
     mov     c29, csp
     blr     c30
-__prot_end:
-    ldp     c29, c30, [csp, #(0*32)]
+__prot_end:                             // this label can be used to implement
+    ldp     c29, c30, [csp, #(0*32)]    // a return BRS branch
     add     csp, csp, #(1*32)
     ret
     udf     #0
