@@ -10,7 +10,8 @@ override free_objects := \
 	$(OBJDIR)/$(free_project)/src/syscalls.c.o \
 	$(OBJDIR)/$(free_project)/src/init.c.o \
 	$(OBJDIR)/$(free_project)/src/printf.c.o \
-	$(OBJDIR)/$(free_project)/src/string.c.o
+	$(OBJDIR)/$(free_project)/src/string.c.o \
+	$(OBJDIR)/$(free_project)/src/auxv.c.o
 
 override free_objfiles := $(free_objects)
 override free_objfiles += $(OBJDIR)/$(free_project)/listauxv.c.o

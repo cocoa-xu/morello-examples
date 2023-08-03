@@ -10,16 +10,14 @@
 __attribute__((used))
 void _start(int argc, char *argv[], char *envp[], auxv_t *auxv)
 {
-    init_cap_relocs(auxv);
-    init_morello_relative(auxv);
-
+    init(auxv, false);
     for (const auxv_t *entry = auxv; entry->type; entry++) {
+        const char *name = getauxname(entry->type);
         if (morello_is_valid(entry->ptr)) {
-            printf("%4lu: %+#p\n", entry->type, entry->ptr);
+            printf(" %-22s %-2lu %+#p\n", name, entry->type, entry->ptr);
         } else {
-            printf("%4lu: %016lx\n", entry->type, entry->val);
+            printf(" %-22s %-2lu %016lx\n", name, entry->type, entry->val);
         }
     }
-
     exit(0);
 }

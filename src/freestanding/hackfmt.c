@@ -16,7 +16,6 @@ int main(int argc, char *argv[], char *envp[])
 __attribute__((used))
 void _start(int argc, char *argv[], char *envp[], auxv_t *auxv)
 {
-    init_morello_relative(auxv);
-    init_cap_relocs(auxv);
+    init(auxv, false);
     exit(main(argc, argv, envp));
 }

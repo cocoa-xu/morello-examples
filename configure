@@ -156,7 +156,7 @@ if [[ "${family}" == "clang" ]] ; then
   try_lflag lflags --target=aarch64-linux-musl_purecap
 else
   try_lflag lflags -march=morello+c64
-    try_lflag lflags -mabi=purecap
+  try_lflag lflags -mabi=purecap
 fi
 
 # generate makefile

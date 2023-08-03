@@ -5,6 +5,7 @@
  */
 
 #include "libc.h"
+#include "auxv.h"
 #include "morello.h"
 
 typedef struct {
@@ -22,7 +23,8 @@ typedef struct {
     p; \
 })
 
-int init_cap_relocs(const auxv_t *auxv)
+__attribute__((unused))
+static int init_cap_relocs(const auxv_t *auxv)
 {
     const cap_relocs_entry_t *cap_start = __get_addr_of("__cap_relocs_start");
     const cap_relocs_entry_t *cap_end = __get_addr_of("__cap_relocs_end");
@@ -84,7 +86,7 @@ typedef struct {
 
 #define R_MORELLO_RELATIVE 59395
 
-int init_morello_relative(const auxv_t *auxv)
+static int init_morello_relative(const auxv_t *auxv, size_t clrperm)
 {
     const rela_t *rela_start = __get_addr_of("__rela_dyn_start");
     const rela_t *rela_end = __get_addr_of("__rela_dyn_end");
@@ -125,9 +127,47 @@ int init_morello_relative(const auxv_t *auxv)
         cap = __builtin_cheri_bounds_set_exact(cap, u->length);
         cap = cap + r->r_addend;
         if (u->perms == MORELLO_RELA_PERM_RX) {
+            if (clrperm) {
+                cap = __builtin_cheri_perms_and(cap, ~clrperm);
+            }
             cap = __builtin_cheri_seal_entry(cap);
         }
         *loc = cap;
     }
     return 0;
+}
+
+static auxv_t __auxv[AT_ENUM_MAX];
+
+int init(const auxv_t *auxv, bool restricted)
+{
+    size_t clrperm = restricted ? (PERM_EXECUTIVE | PERM_SYS_REG) : 0ul;
+    int r = init_morello_relative(auxv, clrperm);
+    if (r != 0) {
+        return r;
+    }
+    for (const auxv_t *entry = auxv; entry->type; entry++) {
+        auxv_t *p = &__auxv[entry->type];
+        p->type = entry->type;
+        p->ptr = entry->ptr;
+    }
+    return 0;
+}
+
+void *getauxptr(unsigned long id)
+{
+    if (id < AT_ENUM_MAX) {
+        return __auxv[id].ptr;
+    } else {
+        return NULL;
+    }
+}
+
+unsigned long getauxval(unsigned long id)
+{
+    if (id < AT_ENUM_MAX) {
+        return __auxv[id].val;
+    } else {
+        return 0ul;
+    }
 }
