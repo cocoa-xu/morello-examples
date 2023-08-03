@@ -8,11 +8,13 @@ codebase for learning and experimentation.
 The examples included so far are listed below. It is recommended to go
 through them in this order:
 
- - Simple hello world.
+ - Simple hello world examples.
  - A series of freestanding apps that are deliberately "safe": see
-   [readme](src/freestanding/README.md) for more details.
+   [README.md](src/freestanding/README.md) for more details.
  - Several compartmentalisation implementations with relevant test
-   applications: see [readme](src/compartments/README.md).
+   applications: see [README.md](src/compartments/README.md).
+ - Another way of implementing compartments using switch to restricted
+   mode: see [README.md](src/restricted/README.md).
 
 ## How to build
 

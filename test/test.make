@@ -15,5 +15,6 @@ test:
 	$(TEST_RUNNER) $(BINDIR)/hellolpb
 	$(TEST_RUNNER) $(BINDIR)/hellolb
 	$(TEST_RUNNER) $(BINDIR)/privdata
+	$(TEST_RUNNER) $(BINDIR)/restricted
 
 .PHONY: test

@@ -31,6 +31,7 @@ include src/util/util.make
 include src/hello/hello.make
 include src/freestanding/free.make
 include src/compartments/cmpt.make
+include src/restricted/restricted.make
 
 # common compilation rules
 $(OBJDIR)/%.c.o: src/%.c | $(OBJDIRS)

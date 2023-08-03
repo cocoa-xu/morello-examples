@@ -19,3 +19,7 @@
     .global sym; \
     .type sym,%function; \
     .size sym,16;
+
+#define SYM(sym) \
+    .global sym; \
+    .size sym,16;
