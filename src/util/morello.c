@@ -12,18 +12,18 @@ typedef _Bool bool;
 
 #define NULL ((void *)0)
 
-size_t morello_get_length(const void *cap)
+size_t morello_get_length(const void * __capability cap)
 {
     bool is_null = cap == NULL && __builtin_cheri_tag_get(cap) == 0ul;
     return is_null ? 0ul : __builtin_cheri_length_get(cap);
 }
 
-const void *morello_get_limit(const void *cap)
+const void * __capability morello_get_limit(const void * __capability cap)
 {
     return __builtin_cheri_address_set(cap, __builtin_cheri_base_get(cap)) + morello_get_length(cap);
 }
 
-size_t morello_get_tail(const void *cap)
+size_t morello_get_tail(const void * __capability cap)
 {
     size_t address = __builtin_cheri_address_get(cap);
     size_t base = __builtin_cheri_base_get(cap);
@@ -35,21 +35,21 @@ size_t morello_get_tail(const void *cap)
     }
 }
 
-bool morello_in_bounds(const void *cap)
+bool morello_in_bounds(const void * __capability cap)
 {
     size_t address = __builtin_cheri_address_get(cap);
     size_t base = __builtin_cheri_base_get(cap);
     return base <= address && address < (base + __builtin_cheri_length_get(cap));
 }
 
-bool morello_is_valid(const void *cap)
+bool morello_is_valid(const void * __capability cap)
 {
     return __builtin_cheri_tag_get(cap) != 0 && morello_in_bounds(cap);
 }
 
 #define TEST(x, f) (((x) & (f)) == (f))
 
-bool morello_is_local(const void *cap)
+bool morello_is_local(const void * __capability cap)
 {
     return !TEST(__builtin_cheri_perms_get(cap), PERM_GLOBAL);
 }

@@ -32,8 +32,13 @@ include src/hello/hello.make
 include src/freestanding/free.make
 include src/compartments/cmpt.make
 include src/restricted/restricted.make
+ifeq ($(HYBRID),1)
+include src/hybrid/hybrid.make
+else
+$(warning Build of hybrid code is not supported)
+endif
 
-# common compilation rules
+# common compilation rules: purecap
 $(OBJDIR)/%.c.o: src/%.c | $(OBJDIRS)
 	$(CC) -c $(CFLAGS) $< -o $@
 
@@ -42,6 +47,16 @@ $(OBJDIR)/%.S.o: src/%.S | $(OBJDIRS)
 
 $(OBJDIR)/%.cpp.o: src/%.cpp | $(OBJDIRS)
 	$(CXX) -c $(CXXFLAGS) $< -o $@
+
+# common compilation rules: hybrid
+$(OBJDIR)/%.c.ho: src/%.c | $(OBJDIRS)
+	$(CC) -c $(CFLAGS_HYBRID) $< -o $@
+
+$(OBJDIR)/%.S.ho: src/%.S | $(OBJDIRS)
+	$(CC) -c $(CFLAGS_HYBRID) $< -o $@
+
+$(OBJDIR)/%.cpp.ho: src/%.cpp | $(OBJDIRS)
+	$(CXX) -c $(CXXFLAGS_HYBRID) $< -o $@
 
 # clean targets
 clean:
@@ -62,7 +77,6 @@ $(BINDIR) $(LIBDIR):
 	@mkdir -p $@
 
 # tests
-
 include test/test.make
 
 .PHONY: main clean distclean

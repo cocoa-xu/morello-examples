@@ -44,11 +44,14 @@ static size_t permbits[] = {
 
 static char buf[128];
 
-const char *cap_perms_to_str(char *dst, const void *cap)
+const char *cap_perms_to_str(char *dst, const void * __capability cap)
 {
+    if (dst == NULL) {
+        dst = buf;
+    }
     const char *res = dst;
     size_t perms = __builtin_cheri_perms_get(cap);
-    size_t *p = permbits;
+    const size_t *p = permbits;
     const char *n = permnames;
     for(; *p && *n; n++, p++, dst++) {
         *dst = TEST(perms, *p) ? *n : '-';
@@ -57,8 +60,11 @@ const char *cap_perms_to_str(char *dst, const void *cap)
     return res;
 }
 
-const char *cap_seal_to_str(char *dst, const void *cap)
+const char *cap_seal_to_str(char *dst, const void * __capability cap)
 {
+    if (dst == NULL) {
+        dst = buf;
+    }
     const char *res = dst;
     unsigned int otype = __builtin_cheri_type_get(cap) & 0x7fffu;
     switch (otype) {
@@ -83,7 +89,7 @@ const char *cap_seal_to_str(char *dst, const void *cap)
 /**
  * Prints detailed information about capability to string.
  */
-const char *cap_to_str(char *dst, const void *cap)
+const char *cap_to_str(char *dst, const void * __capability cap)
 {
     if (dst == NULL) {
         dst = buf;
