@@ -18,7 +18,7 @@ mkdir -p ${LLVM_PREFIX}
 pushd ${LLVM_PREFIX}
 git init
 repo=https://git.morello-project.org/morello/llvm-project-releases.git
-branch=morello/linux-aarch64-release-1.6
+branch=morello/linux-aarch64-release-${MORELLO_LLVM_VERSION}
 git fetch -- ${repo} +refs/heads/${branch}:refs/remotes/origin/${branch}
 git checkout origin/${branch} -b ${branch}
 popd
