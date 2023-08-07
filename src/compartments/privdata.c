@@ -24,6 +24,8 @@ typedef struct {
     void *data;
     void *owning;
     void *sealer;
+    void *stack;
+    void *stack_owning;
 } priv_data_t;
 
 /**
@@ -36,7 +38,7 @@ static priv_data_t *priv_data;
  * Initialisation function that allocate memory for
  * the global object.
  */
-static void init();
+static void init(size_t stack_pages);
 
 /**
  * Malicious code. It can derive a valid capability
@@ -70,26 +72,81 @@ static good_fun_t *protect(good_fun_t *fn);
 
 int main(int argc, char *argv[])
 {
-    init();
+    init(4 /* stack pages */);
 
     printf("&priv:          %s\n", cap_to_str(NULL, &priv_data));
     printf("priv:           %s\n", cap_to_str(NULL, priv_data));
     printf("priv->data:     %s\n", cap_to_str(NULL, priv_data->data));
     printf("priv->owning:   %s\n", cap_to_str(NULL, priv_data->owning));
+    printf("priv->stack:    %s\n", cap_to_str(NULL, priv_data->stack));
 
     good_fun_t *fn = protect(encrypt_message);
 
     printf("priv:           %s\n", cap_to_str(NULL, priv_data));
     printf("fn:             %s\n", cap_to_str(NULL, fn));
 
+    size_t priv_addr = cheri_address_get(priv_data);
+
     const char *message = "hello morello...";
     char buffer[17] = {};
+    printf("before...\n");
+    printf("csp:            %s\n", cap_to_str(NULL, cheri_csp_get()));
     const char *encrypted = fn(priv_data, buffer, message, 16);
+    printf("after...\n");
+    printf("csp:            %s\n", cap_to_str(NULL, cheri_csp_get()));
+
+    /**
+     * This code looks through the stack to see if an unsealed, valid
+     * priv_data capability was spilled during the encrypt function.
+     * Note that due to ASLR and compiler optimisations this code may
+     * not find the spilled capability and the only definite way to
+     * find it would be to use a debugger.
+     *
+     * To do so in morelloie run:
+     *   $ morelloie -debug -break encrypt_message -- build/bin/privdata
+     * During Morelloie's run:
+     *   $ finish
+     *   $ view csp-1024 csp
+     * And the unsealed priv_data capability will be one of the printed values.
+     *
+     * To do so in GDB run:
+     *   $ gdb build/bin/privdata
+     * During GDB's run:
+     *   $ break encrypt_message
+     *   $ r
+     *   $ n
+     *   Repeat until the priv ptr is dereferenced in encrypt_message
+     *   $x/64xg $sp
+     *   Search the printed stack for the address of priv as printed earlier in the program's run
+     *   Find the offset from $sp in which priv is stored
+     *   $ p (void * __capability)*(priv_data_t**)($sp + offset)
+     *   The last command verifies that the capability in memory is unsealed and valid
+     */
+    void **sp = cheri_csp_get();
+    size_t caps_to_check = 512;
+    for(size_t c = 0; c < caps_to_check; ++c, --sp) {
+        void *cap_in_stack = *sp;
+        if(!cheri_tag_get(cap_in_stack)) {
+            continue;
+        }
+
+        if(cheri_address_get(cap_in_stack) == priv_addr && !cheri_is_sealed(cap_in_stack)) {
+            printf("FOUND SECRET IN STACK!\n");
+            printf("Addr: %lx, Cap: %s\n", cheri_address_get(sp), cap_to_str(NULL, cap_in_stack));
+            printf("Secret: %x\n", ((priv_data_t*)cap_in_stack)->secret);
+            break;
+        }
+
+    }
 
     printf("secret message: %s\n", message);
     printf("encrypted data: %s\n", encrypted);
 
+    printf("before...\n");
+    printf("csp:            %s\n", cap_to_str(NULL, cheri_csp_get()));
     const char *decrypted = fn(priv_data, buffer, encrypted, 16);
+    printf("after...\n");
+    printf("csp:            %s\n", cap_to_str(NULL, cheri_csp_get()));
     printf("decrypted:      %s\n", decrypted);
 
     malware();
@@ -106,12 +163,15 @@ int main(int argc, char *argv[])
 #define PROT_CAP_INVOKE 0x2000 // Purecap libc fix-ups
 #endif
 
-static void init()
+static void init(size_t stack_pages)
 {
     size_t pgsz = getpagesize();
+    size_t stack_len = stack_pages * pgsz;
     int prot = PROT_READ | PROT_WRITE | PROT_CAP_INVOKE;
+    int stack_prot = PROT_READ | PROT_WRITE;
     int flags = MAP_PRIVATE | MAP_ANONYMOUS;
     void *mem = mmap(NULL, pgsz, prot, flags, -1, 0);
+    void *stack_mem = mmap(NULL, stack_len, stack_prot, flags, -1, 0);
 
     typedef struct {
         priv_data_t priv;
@@ -124,6 +184,8 @@ static void init()
     priv_data->data = cheri_perms_and(cheri_bounds_set_exact(part->data, 128), RW_PERMS);
     priv_data->owning = mem; // todo: use this owning capability for munmap
     priv_data->sealer = cheri_perms_and(getauxptr(AT_CHERI_SEAL_CAP), PERM_SEAL) + 7;
+    priv_data->stack = cheri_perms_and(cheri_bounds_set_exact(stack_mem, stack_len), RW_PERMS) + stack_len;
+    priv_data->stack_owning = stack_mem;
 }
 
 static void malware()
@@ -146,6 +208,8 @@ static void malware()
 
 static const char *encrypt_message(const priv_data_t *priv, char *out, const char *text, size_t len)
 {
+    printf("inside...\n");
+    printf("csp:            %s\n", cap_to_str(NULL, cheri_csp_get()));
     // todo: do something when length of message
     // is not multiple of the key size
     unsigned key = priv->secret;
