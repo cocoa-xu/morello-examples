@@ -46,6 +46,8 @@ bool morello_is_local(const void * __capability cap);
 
 /**
  * Convert capability into string representation.
+ * If dst is NULL, a pointer to a static object is returned.
+ * Using it may be unsafe.
  */
 const char *cap_to_str(char *dst, const void * __capability cap);
 const char *cap_perms_to_str(char *dst, const void * __capability cap);

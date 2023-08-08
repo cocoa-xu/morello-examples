@@ -15,8 +15,9 @@ through them in this order:
    applications: see [README.md](src/compartments/README.md).
  - Another way of implementing compartments using switch to restricted
    mode: see [README.md](src/restricted/README.md).
+ - Some hybrid examples: see [README.md](src/hybrid/README.md).
 
-## How to build
+## How to Build
 
 Prerequisites:
 
@@ -53,7 +54,7 @@ To run tests with Morello IE, add `TEST_RUNNER`:
 
     make test TEST_RUNNER="/path/to/morelloie --"
 
-## How to run
+## How to Run
 
 All the example applications are intended to be used on a Morello system
 with purecap Linux userspace. It can be Morello board, Morello FVP (for

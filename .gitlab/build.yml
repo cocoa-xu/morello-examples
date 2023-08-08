@@ -7,6 +7,7 @@ build-llvm:
     MORELLOIE_VERSION: 2.3-533
     MORELLOIE_DOWNLOAD_URL: https://developer.arm.com/-/media/Arm%20Developer%20Community/Downloads/Morello/Development%20Tools/Morello%20Instruction%20Emulator
     MORELLO_LLVM_VERSION: 1.6.1
+    MUSL_GITREF: morello/master
   stage: build
   script:
     - /bin/bash .gitlab/build-llvm.sh
