@@ -18,7 +18,7 @@ ifeq ($(HYBRID),1)
 main: $(OBJDIR)/libutil.ha
 endif
 
-$(util_objects): CFLAGS += -nostdinc
+$(util_objects): CFLAGS += -nostdinc -I$(COMPILER_INCLUDE_DIR)
 
 $(OBJDIR)/libutil.a: $(util_objects) | $(LIBDIR)
 	$(create-archive)

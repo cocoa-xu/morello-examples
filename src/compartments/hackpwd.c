@@ -6,7 +6,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <cheriintrin.h>
 
 #include "cmpt.h"
 #include "morello.h"
@@ -22,8 +21,8 @@ static char check_password(const char *buffer, size_t sz)
 static void *get_password(void *buffer)
 {
     printf("password: "); fflush(stdout);
-    char *p = cheri_address_set(__builtin_cheri_stack_get(), cheri_address_get(buffer)); // derive cap from stack
-    if (!morello_is_valid(p)) {
+    char *p = cheri_address_set(cheri_csp_get(), cheri_address_get(buffer)); // derive cap from stack
+    if (!cheri_is_deref(p)) {
         p = buffer;
     }
     scanf("%s", p); // may overflow

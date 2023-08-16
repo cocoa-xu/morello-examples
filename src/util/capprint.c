@@ -50,7 +50,7 @@ const char *cap_perms_to_str(char *dst, const void * __capability cap)
         dst = buf;
     }
     const char *res = dst;
-    size_t perms = __builtin_cheri_perms_get(cap);
+    size_t perms = cheri_perms_get(cap);
     const size_t *p = permbits;
     const char *n = permnames;
     for(; *p && *n; n++, p++, dst++) {
@@ -66,7 +66,7 @@ const char *cap_seal_to_str(char *dst, const void * __capability cap)
         dst = buf;
     }
     const char *res = dst;
-    unsigned int otype = __builtin_cheri_type_get(cap) & 0x7fffu;
+    unsigned int otype = cheri_type_get(cap) & 0x7fffu;
     switch (otype) {
         case 0:
             strcpy(dst, "none");
@@ -94,12 +94,12 @@ const char *cap_to_str(char *dst, const void * __capability cap)
     if (dst == NULL) {
         dst = buf;
     }
-    size_t tag = __builtin_cheri_tag_get(cap);
-    size_t addr = __builtin_cheri_address_get(cap);
-    size_t base = __builtin_cheri_base_get(cap);
-    size_t len = __builtin_cheri_length_get(cap);
+    size_t tag = cheri_tag_get(cap);
+    size_t addr = cheri_address_get(cap);
+    size_t base = cheri_base_get(cap);
+    size_t len = cheri_length_get(cap);
     size_t lim = base + len;
-    ssize_t offset = (ssize_t)__builtin_cheri_offset_get(cap);
+    ssize_t offset = (ssize_t)cheri_offset_get(cap);
 
     char perm[19];
     char seal[5];

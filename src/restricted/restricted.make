@@ -20,6 +20,6 @@ $(BINDIR)/restricted: $(strm_objects) $(OBJDIR)/libfree.a
 	$(CC) -nostdlib -ffreestanding $(FREE_LFLAGS) $^ $(PURECAP_CRTLIB) -o $@ -static
 
 $(strm_objects): CFLAGS = $(FREE_CFLAGS) -nostdinc -ffreestanding
-$(strm_objects): CFLAGS += -I$(free_curdir)/include -I$(util_curdir) -I$(strm_curdir)/include
+$(strm_objects): CFLAGS += -I$(free_curdir)/include -I$(util_curdir) -I$(strm_curdir)/include -I$(COMPILER_INCLUDE_DIR)
 
 $(strm_objects): $(strm_this)

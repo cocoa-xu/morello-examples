@@ -13,7 +13,7 @@ void _start(int argc, char *argv[], char *envp[], auxv_t *auxv)
     init(auxv, false);
     for (const auxv_t *entry = auxv; entry->type; entry++) {
         const char *name = getauxname(entry->type);
-        if (morello_is_valid(entry->ptr)) {
+        if (cheri_is_deref(entry->ptr)) {
             printf(" %-22s %-2lu %+#p\n", name, entry->type, entry->ptr);
         } else {
             printf(" %-22s %-2lu %016lx\n", name, entry->type, entry->val);

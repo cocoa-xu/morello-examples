@@ -5,7 +5,6 @@
  */
 
 #include <stdio.h>
-#include <cheriintrin.h>
 
 #include "cmpt.h"
 #include "morello.h"
@@ -14,8 +13,8 @@
 static void *fun(void *arg)
 {
     printf("inside...\n");
-    printf("csp: %s\n", cap_to_str(NULL, __builtin_cheri_stack_get()));
-    printf("cid: %s\n", cap_to_str(NULL, __builtin_cheri_cid_get()));
+    printf("csp: %s\n", cap_to_str(NULL, cheri_csp_get()));
+    printf("cid: %s\n", cap_to_str(NULL, cheri_cid_get()));
     printf("pcc: %s\n", cap_to_str(NULL, cheri_pcc_get()));
     *((int *)arg) = 0;
     return arg;
@@ -41,8 +40,8 @@ int main(int argc, char const *argv[])
 
     // Stack before:
     printf("before...\n");
-    printf("csp: %s\n", cap_to_str(NULL, __builtin_cheri_stack_get()));
-    printf("cid: %s\n", cap_to_str(NULL, __builtin_cheri_cid_get()));
+    printf("csp: %s\n", cap_to_str(NULL, cheri_csp_get()));
+    printf("cid: %s\n", cap_to_str(NULL, cheri_cid_get()));
     printf("pcc: %s\n", cap_to_str(NULL, cheri_pcc_get()));
 
     // Invoke function in the compartment
@@ -50,8 +49,8 @@ int main(int argc, char const *argv[])
 
     // Stack after:
     printf("after...\n");
-    printf("csp: %s\n", cap_to_str(NULL, __builtin_cheri_stack_get()));
-    printf("cid: %s\n", cap_to_str(NULL, __builtin_cheri_cid_get()));
+    printf("csp: %s\n", cap_to_str(NULL, cheri_csp_get()));
+    printf("cid: %s\n", cap_to_str(NULL, cheri_cid_get()));
     printf("pcc: %s\n", cap_to_str(NULL, cheri_pcc_get()));
     return *res;
 }

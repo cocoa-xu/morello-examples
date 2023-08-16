@@ -31,7 +31,7 @@ ifeq ($(COMPILER_FAMILY),clang)
 override FREE_LFLAGS += -Wl,--local-caprelocs=elf
 endif
 
-$(free_objfiles): CFLAGS = $(FREE_CFLAGS) -nostdinc -ffreestanding -I$(free_curdir)/include -I$(free_curdir)/../util
+$(free_objfiles): CFLAGS = $(FREE_CFLAGS) -nostdinc -ffreestanding -I$(free_curdir)/include -I$(free_curdir)/../util -I$(COMPILER_INCLUDE_DIR)
 
 ifeq ($(COMPILER_FAMILY),gcc)
 $(OBJDIR)/$(free_project)/src/printf.c.o: CFLAGS += -Wno-stringop-overflow

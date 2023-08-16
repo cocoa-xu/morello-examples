@@ -187,6 +187,8 @@ else
   try_comp_flag -march=morello+c64
   try_comp_flag_hybrid -march=morello
   try_comp_flag -mabi=purecap
+  try_comp_flag -Wno-attributes
+  try_comp_flag_hybrid -Wno-attributes
   try_comp_flag -fmax-errors=3
   try_comp_flag_hybrid -fmax-errors=3
 fi
@@ -238,4 +240,5 @@ override BINDIR = ${build}/bin
 override LIBDIR = ${build}/lib
 override DEBUG = ${debug}
 override HYBRID = ${hybrid}
+override COMPILER_INCLUDE_DIR = $(${CC} --print-file-name include)
 EOF

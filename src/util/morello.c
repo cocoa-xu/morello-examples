@@ -12,22 +12,22 @@ typedef _Bool bool;
 
 #define NULL ((void *)0)
 
-size_t morello_get_length(const void * __capability cap)
+size_t cheri_length_get_zero(const void * __capability cap)
 {
-    bool is_null = cap == NULL && __builtin_cheri_tag_get(cap) == 0ul;
-    return is_null ? 0ul : __builtin_cheri_length_get(cap);
+    bool is_null = cap == NULL && cheri_tag_get(cap) == 0ul;
+    return is_null ? 0ul : cheri_length_get(cap);
 }
 
-const void * __capability morello_get_limit(const void * __capability cap)
+const void * __capability cheri_get_limit(const void * __capability cap)
 {
-    return __builtin_cheri_address_set(cap, __builtin_cheri_base_get(cap)) + morello_get_length(cap);
+    return cheri_address_set(cap, cheri_base_get(cap)) + cheri_length_get_zero(cap);
 }
 
-size_t morello_get_tail(const void * __capability cap)
+size_t cheri_get_tail(const void * __capability cap)
 {
-    size_t address = __builtin_cheri_address_get(cap);
-    size_t base = __builtin_cheri_base_get(cap);
-    size_t limit = morello_get_length(cap) + base;
+    size_t address = cheri_address_get(cap);
+    size_t base = cheri_base_get(cap);
+    size_t limit = cheri_length_get_zero(cap) + base;
     if (base <= address && address < limit) {
         return limit - address;
     } else {
@@ -35,21 +35,19 @@ size_t morello_get_tail(const void * __capability cap)
     }
 }
 
-bool morello_in_bounds(const void * __capability cap)
+bool cheri_in_bounds(const void * __capability cap)
 {
-    size_t address = __builtin_cheri_address_get(cap);
-    size_t base = __builtin_cheri_base_get(cap);
-    return base <= address && address < (base + __builtin_cheri_length_get(cap));
+    size_t address = cheri_address_get(cap);
+    size_t base = cheri_base_get(cap);
+    return base <= address && address < (base + cheri_length_get(cap));
 }
 
-bool morello_is_valid(const void * __capability cap)
+bool cheri_is_deref(const void * __capability cap)
 {
-    return __builtin_cheri_tag_get(cap) != 0 && morello_in_bounds(cap);
+    return cheri_is_valid(cap) && cheri_in_bounds(cap) && !cheri_is_sealed(cap);
 }
 
-#define TEST(x, f) (((x) & (f)) == (f))
-
-bool morello_is_local(const void * __capability cap)
+bool cheri_is_local(const void * __capability cap)
 {
-    return !TEST(__builtin_cheri_perms_get(cap), PERM_GLOBAL);
+    return !cheri_check_perms(cap, PERM_GLOBAL);
 }

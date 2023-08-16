@@ -8,7 +8,6 @@
 
 #include <stdio.h>
 #include <stdbool.h>
-#include <cheriintrin.h>
 #include <sys/auxv.h>
 #include <sys/mman.h>
 #include <fcntl.h>
@@ -27,7 +26,7 @@ int main(int argc, char *argv[])
 
     // objects and functions
     printf(" - local var (long double): %s\n", cap_to_str(NULL, &local_variable));
-    printf(" - stack (CSP):             %s\n", cap_to_str(NULL, __builtin_cheri_stack_get()));
+    printf(" - stack (CSP):             %s\n", cap_to_str(NULL, cheri_csp_get()));
     printf(" - global var (long):       %s\n", cap_to_str(NULL, &global_variable));
     printf(" - sentry (main):           %s\n", cap_to_str(NULL, &main));
     printf(" - program counter (PCC):   %s\n", cap_to_str(NULL, cheri_pcc_get()));

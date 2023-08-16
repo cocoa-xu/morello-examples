@@ -35,8 +35,8 @@ static void *get_cmpt_stack(size_t size)
     int prot = PROT_READ | PROT_WRITE;
     int flags = MAP_PRIVATE | MAP_ANONYMOUS;
     void *stack = mmap(NULL, size, prot, flags);
-    stack = __builtin_align_down(stack + size, sizeof(void *));
-    return __builtin_cheri_perms_and(stack, PERM_GLOBAL | READ_CAP_PERMS | WRITE_CAP_PERMS);
+    stack = cheri_align_down(stack + size, sizeof(void *));
+    return cheri_perms_and(stack, PERM_GLOBAL | READ_CAP_PERMS | WRITE_CAP_PERMS);
 }
 
 // An instance of this object will be loaded
@@ -68,7 +68,7 @@ void *_init_compartments(int argc, char *argv[], char *envp[], auxv_t *auxv)
     }
 
     // Init global objects and functions:
-    void *pcc = __builtin_cheri_program_counter_get();
+    void *pcc = cheri_pcc_get();
     // Note: if `false` is used below, the app will segfault
     // after returning from the indirectly called global function.
     init(auxv, /* restricted */ true);
@@ -78,17 +78,17 @@ void *_init_compartments(int argc, char *argv[], char *envp[], auxv_t *auxv)
     ctx._cid = getauxptr(AT_CHERI_CID_CAP);
 
     // Locate original thunk to copy it over for each compartment:
-    ctx._thunk = __builtin_cheri_address_set(pcc, __builtin_align_down(__builtin_cheri_address_get(_thunk), 4));
-    ctx._thunk = __builtin_cheri_perms_and(ctx._thunk, PERM_GLOBAL | PERM_LOAD);
-    ctx.thunk_size = __builtin_align_up(__builtin_cheri_address_get(&_thunk_end) - __builtin_cheri_address_get(_thunk), 4);
-    ctx.thunk_data_offset = __builtin_align_up(__builtin_cheri_address_get(&_thunk_data) - __builtin_cheri_address_get(_thunk), sizeof(void *));
-    ctx._thunk = __builtin_cheri_bounds_set_exact(ctx._thunk, ctx.thunk_size);
+    ctx._thunk = cheri_address_set(pcc, cheri_align_down(cheri_address_get(_thunk), 4));
+    ctx._thunk = cheri_perms_and(ctx._thunk, PERM_GLOBAL | PERM_LOAD);
+    ctx.thunk_size = cheri_align_up(cheri_address_get(&_thunk_end) - cheri_address_get(_thunk), 4);
+    ctx.thunk_data_offset = cheri_align_up(cheri_address_get(&_thunk_data) - cheri_address_get(_thunk), sizeof(void *));
+    ctx._thunk = cheri_bounds_set_exact(ctx._thunk, ctx.thunk_size);
 
     // We'll use it when setting up each compartment:
-    ctx._switch = __builtin_cheri_address_set(pcc, __builtin_align_down(__builtin_cheri_address_get(_switch), 4));
-    ctx._switch = __builtin_cheri_perms_and(ctx._switch, PERM_GLOBAL | READ_CAP_PERMS | EXEC_CAP_PERMS);
-    size_t _switch_size = __builtin_align_up(__builtin_cheri_address_get(&_switch_end) - __builtin_cheri_address_get(_switch), 4);
-    ctx._switch = __builtin_cheri_seal_entry(__builtin_cheri_bounds_set_exact(ctx._switch, _switch_size) + 1); // +1 for C64
+    ctx._switch = cheri_address_set(pcc, cheri_align_down(cheri_address_get(_switch), 4));
+    ctx._switch = cheri_perms_and(ctx._switch, PERM_GLOBAL | READ_CAP_PERMS | EXEC_CAP_PERMS);
+    size_t _switch_size = cheri_align_up(cheri_address_get(&_switch_end) - cheri_address_get(_switch), 4);
+    ctx._switch = cheri_sentry_create(cheri_bounds_set_exact(ctx._switch, _switch_size) + 1); // +1 for C64
 
     // Allocate root stack. Todo: use part of the original stack instead
     // of a new private mapping.
@@ -96,7 +96,7 @@ void *_init_compartments(int argc, char *argv[], char *envp[], auxv_t *auxv)
     // compartment stack. It will be overwritten after root compartment
     // initialisation and before switching to main.
     void *root_stack = get_cmpt_stack(ctx.pgsz * 16);
-    thunk_data_t *data = (thunk_data_t *)__builtin_cheri_bounds_set_exact(root_stack - sizeof(thunk_data_t), sizeof(thunk_data_t));
+    thunk_data_t *data = (thunk_data_t *)cheri_bounds_set_exact(root_stack - sizeof(thunk_data_t), sizeof(thunk_data_t));
     data->target = NULL; // no need for a function pointer here, we will always call main
     data->exec = NULL; // ditto
     data->tp = NULL; // not used but can be set up here (not currently implemented)
@@ -116,8 +116,8 @@ switch_t *create_compartment(void *target, unsigned stack_pages)
     memcpy(code, ctx._thunk, ctx.thunk_size);
 
     // Setup thunk data used by the switch:
-    thunk_data_t *data = (thunk_data_t *)__builtin_cheri_perms_and(code + ctx.thunk_data_offset, PERM_STORE | PERM_STORE_CAP);
-    data->target = __builtin_cheri_sealed_get(target) ? target : __builtin_cheri_seal_entry(target);
+    thunk_data_t *data = (thunk_data_t *)cheri_perms_and(code + ctx.thunk_data_offset, PERM_STORE | PERM_STORE_CAP);
+    data->target = cheri_is_sealed(target) ? target : cheri_sentry_create(target);
     data->exec = ctx._switch;
     data->tp = NULL; // not currently used (but could be set up here)
     data->sp = get_cmpt_stack(ctx.pgsz * stack_pages);
@@ -125,20 +125,20 @@ switch_t *create_compartment(void *target, unsigned stack_pages)
 
     // Change memory protection flags:
     mprotect(code, ctx.pgsz, PROT_READ | PROT_EXEC);
-    char *cache = (char *)__builtin_cheri_perms_and(code, PERM_LOAD | PERM_STORE);
+    char *cache = (char *)cheri_perms_and(code, PERM_LOAD | PERM_STORE);
     __builtin___clear_cache(cache, cache + ctx.pgsz);
 
     // Fix permissions
-    code = __builtin_cheri_perms_and(code, PERM_GLOBAL | READ_CAP_PERMS | PERM_EXECUTE);
-    code = __builtin_cheri_bounds_set_exact(code, ctx.thunk_size);
-    return __builtin_cheri_seal_entry(code + 1); // +1 for C64
+    code = cheri_perms_and(code, PERM_GLOBAL | READ_CAP_PERMS | PERM_EXECUTE);
+    code = cheri_bounds_set_exact(code, ctx.thunk_size);
+    return cheri_sentry_create(code + 1); // +1 for C64
 }
 
 long get_compartment_id()
 {
     if (is_in_restricted()) {
-        void *cid = __builtin_cheri_cid_get();
-        return __builtin_cheri_address_get(cid);
+        void *cid = cheri_cid_get();
+        return cheri_address_get(cid);
     } else {
         return -1l;
     }
@@ -146,5 +146,5 @@ long get_compartment_id()
 
 bool is_in_restricted()
 {
-    return !morello_check_perms(__builtin_cheri_program_counter_get(), PERM_EXECUTIVE);
+    return !cheri_check_perms(cheri_pcc_get(), PERM_EXECUTIVE);
 }

@@ -17,7 +17,7 @@ void exit(int code)
 
 ssize_t write(int fd, const void *buf, size_t count)
 {
-    size_t tail = morello_get_tail(buf);
+    size_t tail = cheri_get_tail(buf);
     if (count > tail) {
         count = tail;
     }
@@ -42,7 +42,7 @@ void *mmap(void *addr, size_t len, int prot, int flags)
     register intptr_t c4 __asm__("c4") = -1;
     register intptr_t c5 __asm__("c5") = 0;
     __asm__ __volatile__ ("svc 0\n" : "=C"(c0) : "C"(c8), "C"(c0), "C"(c1), "C"(c2), "C"(c3), "C"(c4), "C"(c5));
-    return (void *)__builtin_cheri_bounds_set(c0, len);
+    return (void *)cheri_bounds_set(c0, len);
 }
 
 int mprotect(void *addr, size_t len, int prot)

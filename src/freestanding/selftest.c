@@ -53,23 +53,23 @@ static int test_strings(char *argv[], char *envp[])
     TEST({}, strcmp("ABC", "abc") < 0, {});
     TEST({}, strcmp("123", "123") == 0, {});
     TEST(const char *str = "01234567",
-        strcmp(str, __builtin_cheri_bounds_set_exact(str, 4)) > 0, {});
+        strcmp(str, cheri_bounds_set_exact(str, 4)) > 0, {});
     TEST(const char *str = "01234567",
-        strcmp(__builtin_cheri_bounds_set_exact(str, 5), str) < 0, {});
+        strcmp(cheri_bounds_set_exact(str, 5), str) < 0, {});
     TEST({}, strcmp(NULL, NULL) == 0, {});
     TEST(const char str[] = "",
         strlen(str) == 0, {});
     TEST(const char str[] = "01234",
         strlen(str) == 5, {});
     TEST(const char str[] = "0123456789",
-        strlen(__builtin_cheri_bounds_set_exact(str, 3)) == 3, {});
+        strlen(cheri_bounds_set_exact(str, 3)) == 3, {});
     TEST(const char str[] = "0123456789",
-        strlen(__builtin_cheri_tag_clear(str)) == 0, {});
+        strlen(cheri_tag_clear(str)) == 0, {});
     TEST(const char src[] = "0123456789"; char dst[64];
         strcpy(dst, src),
         strcmp(src, dst) == 0, {});
     TEST(const char src[] = "0123456789"; char dst[64];
-        strcpy(dst, __builtin_cheri_bounds_set_exact(src, 7)),
+        strcpy(dst, cheri_bounds_set_exact(src, 7)),
         strcmp("0123456", dst) == 0, {});
     TEST(const char src[] = "0123456789"; char dst[7];
         strcpy(dst, src),
@@ -140,18 +140,19 @@ static int test_morello(char *argv[], char *envp[])
     size_t count = 0;
     const char name[] = "morello";
 
-    TEST({}, morello_is_local(argv) == false, {});
-    TEST({}, morello_is_valid(envp), {});
-    TEST({}, morello_in_bounds(argv), {});
-    TEST({}, morello_get_length(NULL) == 0, {});
-    TEST({}, morello_get_tail(NULL) == 0, {});
-    TEST({}, morello_get_length(argv) == morello_get_tail(argv), {});
+    TEST({}, cheri_is_local(argv) == false, {});
+    TEST({}, cheri_is_deref(envp), {});
+    TEST({}, cheri_in_bounds(argv), {});
+    TEST({}, cheri_length_get_zero(NULL) == 0, {});
+    TEST({}, cheri_get_tail(NULL) == 0, {});
+    TEST({}, cheri_length_get_zero(argv) == cheri_get_tail(argv), {});
+    TEST({}, cheri_length_get_zero(argv) == cheri_length_get(argv), {});
     TEST(char buf[64], strcmp(cap_perms_to_str(buf, argv), "GrRMwWL-----------") == 0, {});
-    TEST(void *pcc = __builtin_cheri_program_counter_get(); char buf[64],
+    TEST(void *pcc = cheri_pcc_get(); char buf[64],
         strcmp(cap_perms_to_str(buf, pcc), "GrRM---xES--------") == 0, {});
     TEST(void *sentry = main; char buf[64], strcmp(cap_seal_to_str(buf, sentry), "rb") == 0, {});
     TEST(char buf[64], strcmp(cap_seal_to_str(buf, envp), "none") == 0, {});
-    TEST({}, morello_get_limit(NULL) == NULL, {});
+    TEST({}, cheri_get_limit(NULL) == NULL, {});
 
     return r;
 }

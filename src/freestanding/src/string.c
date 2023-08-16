@@ -16,8 +16,8 @@
  */
 size_t strlen(const char *str)
 {
-    if (!str || !morello_is_valid(str)) return 0ul;
-    size_t k, max = morello_get_tail(str);
+    if (!str || !cheri_is_deref(str)) return 0ul;
+    size_t k, max = cheri_get_tail(str);
     for (k = 0; k < max && *str; str++, k++);
     return k;
 }
@@ -32,8 +32,8 @@ size_t strlen(const char *str)
  */
 char *strcpy(char *dst, const char *src)
 {
-    const char *dst_lim = morello_get_limit(dst);
-    const char *src_lim = morello_get_limit(src);
+    const char *dst_lim = cheri_get_limit(dst);
+    const char *src_lim = cheri_get_limit(src);
     for(; dst < dst_lim && src < src_lim && *src; dst++, src++) {
         *dst = *src;
     }
@@ -51,8 +51,8 @@ char *strcpy(char *dst, const char *src)
  */
 int strcmp(const char *lhs, const char *rhs)
 {
-    const char *lhs_lim = (char *)morello_get_limit(lhs);
-    const char *rhs_lim = (char *)morello_get_limit(rhs);
+    const char *lhs_lim = (char *)cheri_get_limit(lhs);
+    const char *rhs_lim = (char *)cheri_get_limit(rhs);
     for(; lhs < lhs_lim && rhs < rhs_lim && *lhs == *rhs && *lhs; lhs++, rhs++);
     if (lhs < lhs_lim && rhs < rhs_lim) {
         return *(unsigned char *)lhs - *(unsigned char *)rhs;
@@ -70,7 +70,7 @@ int strcmp(const char *lhs, const char *rhs)
  */
 void *memset(void *dst, int c, size_t len)
 {
-    size_t max = morello_get_tail(dst);
+    size_t max = cheri_get_tail(dst);
     if (len > max) {
         len = max;
     }
@@ -83,10 +83,10 @@ void *memset(void *dst, int c, size_t len)
         tail = dst;
         goto tail;
     } else {
-        tail = __builtin_align_down(tail_end, sizeof(void *));
+        tail = cheri_align_down(tail_end, sizeof(void *));
     }
     char *head = dst;
-    char *head_end = __builtin_align_up(head, sizeof(void *));
+    char *head_end = cheri_align_up(head, sizeof(void *));
     for(char *x = head; x < head_end; x++) {
         *x = c;
     }
@@ -112,8 +112,8 @@ tail:
 void *memcpy(void *dst, const void *src, size_t len)
 {
     void *res = dst;
-    size_t max_dst = morello_get_tail(dst);
-    size_t max_src = morello_get_tail(src);
+    size_t max_dst = cheri_get_tail(dst);
+    size_t max_src = cheri_get_tail(src);
     if (len > max_dst) {
         len = max_dst;
     }
@@ -132,9 +132,9 @@ void *memcpy(void *dst, const void *src, size_t len)
         }
     } else { // capability-aware copying
         char *head = (char *)src;
-        char *head_end = __builtin_align_up(head, sizeof(void *));
+        char *head_end = cheri_align_up(head, sizeof(void *));
         char *tail_end = head + len;
-        char *tail = __builtin_align_down(tail_end, sizeof(void *));
+        char *tail = cheri_align_down(tail_end, sizeof(void *));
         char *d = dst;
         for(char *s = head; s < head_end; d++, s++) {
             *d = *s;

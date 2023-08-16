@@ -10,7 +10,6 @@
 #include <alloca.h>
 
 #include "morello.h"
-#include "cheriintrin.h"
 
 // Capability-aware strcpy:
 static char * __capability strcpy_cap(char * __capability dst, const char *src);
@@ -58,10 +57,10 @@ int main(int argc, char *argv[])
 
 static char * __capability strcpy_cap(char * __capability dst, const char *src)
 {
-    for(; morello_is_valid(dst) && *src; src++, dst++) {
+    for(; cheri_is_deref(dst) && *src; src++, dst++) {
         *dst = *src;
     }
-    if (morello_is_valid(dst)) {
+    if (cheri_is_deref(dst)) {
         *dst = '\0';
     }
     return dst;

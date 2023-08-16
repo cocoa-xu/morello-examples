@@ -47,22 +47,22 @@ static int init_cap_relocs(const auxv_t *auxv)
         if (!r->base) continue;
         void *cap = NULL;
         size_t perm = ~r->permissions;
-        bool is_fun_ptr = perm & __CHERI_CAP_PERMISSION_PERMIT_EXECUTE__;
-        bool is_writable = perm & __CHERI_CAP_PERMISSION_PERMIT_STORE__;
+        bool is_fun_ptr = perm & PERM_EXECUTE;
+        bool is_writable = perm & PERM_STORE;
         if (is_writable) {
-            cap = __builtin_cheri_address_set(rw, r->base);
+            cap = cheri_address_set(rw, r->base);
         } else {
-            cap = __builtin_cheri_address_set(rx, r->base);
+            cap = cheri_address_set(rx, r->base);
         }
-        cap = __builtin_cheri_perms_and(cap, perm);
-        cap = __builtin_cheri_bounds_set_exact(cap, r->size);
-        cap = __builtin_cheri_offset_set(cap, r->offset);
+        cap = cheri_perms_and(cap, perm);
+        cap = cheri_bounds_set_exact(cap, r->size);
+        cap = cheri_offset_set(cap, r->offset);
         if (is_fun_ptr) {
-            cap = __builtin_cheri_seal_entry(cap);
+            cap = cheri_sentry_create(cap);
         }
         // store capability
-        void **loc = __builtin_cheri_address_set(rw, r->location);
-        loc = __builtin_cheri_bounds_set_exact(loc, sizeof(void *));
+        void **loc = cheri_address_set(rw, r->location);
+        loc = cheri_bounds_set_exact(loc, sizeof(void *));
         *loc = cap;
     }
     return 0;
@@ -107,30 +107,30 @@ static int init_morello_relative(const auxv_t *auxv, size_t clrperm)
     }
     for (const rela_t *r = rela_start; r < rela_end; r++) {
         if (r->r_info != R_MORELLO_RELATIVE) continue;
-        void *cap = NULL, **loc = __builtin_cheri_address_set(rw, r->r_offset);
+        void *cap = NULL, **loc = cheri_address_set(rw, r->r_offset);
         const cap_rela_t *u = (cap_rela_t *)loc;
         switch (u->perms) {
             case MORELLO_RELA_PERM_R:
-                cap = __builtin_cheri_perms_and(rx, __CHERI_CAP_PERMISSION_GLOBAL__ | READ_CAP_PERMS);
+                cap = cheri_perms_and(rx, PERM_GLOBAL | READ_CAP_PERMS);
                 break;
             case MORELLO_RELA_PERM_RW:
-                cap = __builtin_cheri_perms_and(rw, __CHERI_CAP_PERMISSION_GLOBAL__ | READ_CAP_PERMS | WRITE_CAP_PERMS);
+                cap = cheri_perms_and(rw, PERM_GLOBAL | READ_CAP_PERMS | WRITE_CAP_PERMS);
                 break;
             case MORELLO_RELA_PERM_RX:
-                cap = __builtin_cheri_perms_and(rx, __CHERI_CAP_PERMISSION_GLOBAL__ | READ_CAP_PERMS | EXEC_CAP_PERMS);
+                cap = cheri_perms_and(rx, PERM_GLOBAL | READ_CAP_PERMS | EXEC_CAP_PERMS);
                 break;
             default:
-                cap = __builtin_cheri_perms_and(rx, 0);
+                cap = cheri_perms_and(rx, 0);
                 break;
         }
-        cap = __builtin_cheri_address_set(cap, u->address);
-        cap = __builtin_cheri_bounds_set_exact(cap, u->length);
+        cap = cheri_address_set(cap, u->address);
+        cap = cheri_bounds_set_exact(cap, u->length);
         cap = cap + r->r_addend;
         if (u->perms == MORELLO_RELA_PERM_RX) {
             if (clrperm) {
-                cap = __builtin_cheri_perms_and(cap, ~clrperm);
+                cap = cheri_perms_and(cap, ~clrperm);
             }
-            cap = __builtin_cheri_seal_entry(cap);
+            cap = cheri_sentry_create(cap);
         }
         *loc = cap;
     }

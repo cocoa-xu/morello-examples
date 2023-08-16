@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <cheriintrin.h>
 #include "perms.h"
 
 /**
@@ -13,36 +14,36 @@
  * length = limit - base
  * Length of a NULL capability is returned as 0.
  */
-size_t morello_get_length(const void * __capability cap);
+size_t cheri_length_get_zero(const void * __capability cap);
 /**
  * Returns limit of the capability as a pointer.
  * Note that limit for a NULL pointer is returned as NULL.
  */
-const void * __capability morello_get_limit(const void * __capability cap);
+const void * __capability cheri_get_limit(const void * __capability cap);
 
 /**
  * Returns difference between the address and the limit
  * of a capability: tail = limit - (base + offset) if this
  * capability is in bounds, otherwise, returns NULL.
  */
-size_t morello_get_tail(const void * __capability cap);
+size_t cheri_get_tail(const void * __capability cap);
 
 /**
  * Returns true if capability is in bounds.
  */
-bool morello_in_bounds(const void * __capability cap);
+bool cheri_in_bounds(const void * __capability cap);
 
 /**
  * Returns true if a capability is dereferenceable:
- * both capability's tag is 1 and the capability is
- * in bounds.
+ * capability's tag is set, it is not sealed and it
+ * is in bounds.
  */
-bool morello_is_valid(const void * __capability cap);
+bool cheri_is_deref(const void * __capability cap);
 
 /**
  * Returns true if capability is local.
  */
-bool morello_is_local(const void * __capability cap);
+bool cheri_is_local(const void * __capability cap);
 
 /**
  * Convert capability into string representation.
@@ -63,6 +64,10 @@ inline static void * __capability __builtin_cheri_stack_get()
 }
 #endif
 
+#ifndef cheri_csp_get
+#define cheri_csp_get() __builtin_cheri_stack_get()
+#endif
+
 /**
  * Access CID register.
  */
@@ -72,6 +77,10 @@ inline static void * __capability __builtin_cheri_cid_get()
     __asm__ volatile ("mrs %0, CID_EL0" : "=C"(ret));
     return ret;
 }
+
+#ifndef cheri_cid_get
+#define cheri_cid_get() __builtin_cheri_cid_get()
+#endif
 
 /**
  * Create LPB-sealed sentry.
@@ -96,7 +105,11 @@ inline static void * __capability morello_lb_sentry_create(void *cap)
 /**
  * Checks if given permissions are present in the capability.
  */
-inline static bool morello_check_perms(const void * __capability cap, size_t perms)
+inline static bool cheri_check_perms(const void * __capability cap, size_t perms)
 {
-    return (__builtin_cheri_perms_get(cap) | ~perms) == ~0;
+    return (cheri_perms_get(cap) | ~perms) == ~0;
 }
+
+#ifndef cheri_copy_from_high
+#define cheri_copy_from_high(cap) __builtin_cheri_copy_from_high(cap)
+#endif

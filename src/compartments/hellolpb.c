@@ -11,7 +11,6 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <sys/mman.h>
-#include <cheriintrin.h>
 
 #include "morello.h"
 
@@ -36,7 +35,7 @@ extern void *cmpt_switch(void *arg);
 static void *fun(void *buffer)
 {
     printf("inside...\n");
-    printf("csp: %s\n", cap_to_str(NULL, __builtin_cheri_stack_get()));
+    printf("csp: %s\n", cap_to_str(NULL, cheri_csp_get()));
     int *data = buffer;
     int x = data[0];
     int y = data[1];
@@ -51,12 +50,12 @@ int main(int argc, char *argv[])
     int buffer[3] = { 2, 3, 0 };
 
     printf("before...\n");
-    printf("csp: %s\n", cap_to_str(NULL, __builtin_cheri_stack_get()));
+    printf("csp: %s\n", cap_to_str(NULL, cheri_csp_get()));
 
     int *res = cmpt_call(cmpt, buffer);
 
     printf("after...\n");
-    printf("csp: %s\n", cap_to_str(NULL, __builtin_cheri_stack_get()));
+    printf("csp: %s\n", cap_to_str(NULL, cheri_csp_get()));
 
     printf("result: %d + %d = %d\n", res[0], res[1], res[2]);
     return 0;

@@ -5,7 +5,6 @@
  */
 
 #include <stdio.h>
-#include <cheriintrin.h>
 
 #include "cmpt.h"
 #include "morello.h"
@@ -14,8 +13,8 @@
 static void *fun(void *arg)
 {
     cmpt_fun_t *another = (cmpt_fun_t *)arg;
-    unsigned cid = cheri_address_get(__builtin_cheri_cid_get());
-    const void *csp = __builtin_cheri_stack_get();
+    unsigned cid = cheri_address_get(cheri_cid_get());
+    const void *csp = cheri_csp_get();
     printf("%u: calling compartment: %s\n", cid, cap_to_str(NULL, another));
     printf("%u: inside outer,  csp = %s\n", cid, cap_to_str(NULL, csp));
     return another((void *)3);
@@ -24,8 +23,8 @@ static void *fun(void *arg)
 // This function will run inside compartment
 static void *nested(void *arg)
 {
-    unsigned cid = cheri_address_get(__builtin_cheri_cid_get());
-    const void *csp = __builtin_cheri_stack_get();
+    unsigned cid = cheri_address_get(cheri_cid_get());
+    const void *csp = cheri_csp_get();
     printf("%u: inside nested, csp = %s\n", cid, cap_to_str(NULL, csp));
     return arg;
 }

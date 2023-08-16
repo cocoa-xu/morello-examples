@@ -34,7 +34,7 @@ typedef struct {
 static size_t buffer_output(void *h, const void *buf, size_t count)
 {
     char *src = (char *)buf;
-    const char *lim = (char *)morello_get_limit(buf);
+    const char *lim = (char *)cheri_get_limit(buf);
     output_buf_t *ph = (output_buf_t *)h;
     size_t k = 0;
     for(; src < lim && count && ph->dst < ph->lim; src++, ph->dst++, count--) {
@@ -46,7 +46,7 @@ static size_t buffer_output(void *h, const void *buf, size_t count)
 
 int sprintf(char *dst, const char *fmt, ...)
 {
-    output_buf_t h = { .dst = dst, .lim = (char *)morello_get_limit(dst) };
+    output_buf_t h = { .dst = dst, .lim = (char *)cheri_get_limit(dst) };
     va_list args;
     va_start(args, fmt);
     int r = printf_core(buffer_output, &h, fmt, args);
@@ -114,7 +114,7 @@ static char *uint_to_str(char *end, uint64_t val, const char *digits, size_t bas
             --buf; *buf = *prefix;
         }
     }
-    return __builtin_cheri_bounds_set_exact(buf, end - buf);
+    return cheri_bounds_set_exact(buf, end - buf);
 }
 
 #define ARG(type, a) ({ nargs--; va_arg(a, type); })
@@ -148,9 +148,9 @@ static char *uint_to_str(char *end, uint64_t val, const char *digits, size_t bas
  */
 static int printf_core(output_fun_t *fn, void *h, const char *fmt, va_list args)
 {
-    const char *limit = (char *)morello_get_limit(fmt); // end of fmt string
+    const char *limit = (char *)cheri_get_limit(fmt); // end of fmt string
     const void *pa = (void *)args;
-    size_t nargs = pa == NULL ? 0ul : __builtin_cheri_length_get(pa) / sizeof(void *); // max num of args
+    size_t nargs = pa == NULL ? 0ul : cheri_length_get(pa) / sizeof(void *); // max num of args
     char buffer[64], *end = buffer + sizeof(buffer); // tmp buffer to store integers converted to string
     int n = 0; // number of chars printed
     fmt_state_t state = { .phase = RESET }; // state of the formatter
@@ -187,7 +187,7 @@ static int printf_core(output_fun_t *fn, void *h, const char *fmt, va_list args)
                                 const char *arg = (char *) ARG(char *, args);
                                 if (arg == NULL) {
                                     arg = "(null)";
-                                } else if (!morello_is_valid(arg)) {
+                                } else if (!cheri_is_deref(arg)) {
                                     arg = "(invalid)";
                                 }
                                 size_t len = strlen(arg);
@@ -223,7 +223,7 @@ static int printf_core(output_fun_t *fn, void *h, const char *fmt, va_list args)
                         case 'n':
                             if (nargs > 0) {
                                 int *arg = (int *)ARG(int *, args);
-                                if (morello_is_valid(arg)) {
+                                if (cheri_is_deref(arg)) {
                                     *arg = n;
                                 }
                                 state.phase = RESET;
@@ -235,12 +235,12 @@ static int printf_core(output_fun_t *fn, void *h, const char *fmt, va_list args)
                             if (TEST(state.feat, ALTERNATE) && TEST(state.feat, SIGN_PLUS)) {
                                 if (nargs > 0) {
                                     void *cap = (void *)ARG(void *, args);
-                                    bool tag = __builtin_cheri_tag_get(cap);
-                                    size_t cap_addr = __builtin_cheri_address_get(cap);
-                                    size_t cap_base = __builtin_cheri_base_get(cap);
-                                    size_t cap_limit = (size_t)morello_get_limit(cap);
-                                    ssize_t cap_offset = (ssize_t)__builtin_cheri_offset_get(cap);
-                                    size_t cap_length = morello_get_length(cap);
+                                    bool tag = cheri_tag_get(cap);
+                                    size_t cap_addr = cheri_address_get(cap);
+                                    size_t cap_base = cheri_base_get(cap);
+                                    size_t cap_limit = (size_t)cheri_get_limit(cap);
+                                    ssize_t cap_offset = (ssize_t)cheri_offset_get(cap);
+                                    size_t cap_length = cheri_length_get_zero(cap);
                                     char capstr[128];
                                     char perm[19];
                                     char seal[5];
@@ -255,9 +255,9 @@ static int printf_core(output_fun_t *fn, void *h, const char *fmt, va_list args)
                             } else if (TEST(state.feat, ALTERNATE)) {
                                 if (nargs > 0) {
                                     void *cap = (void *)ARG(void *, args);
-                                    bool tag = __builtin_cheri_tag_get(cap);
-                                    size_t lo = __builtin_cheri_address_get(cap);
-                                    size_t hi = __builtin_cheri_copy_from_high(cap);
+                                    bool tag = cheri_tag_get(cap);
+                                    size_t lo = cheri_address_get(cap);
+                                    size_t hi = cheri_copy_from_high(cap);
                                     char capstr[48];
                                     int sz = sprintf(capstr, "%c:%016lx:%016lx", tag ? '1' : '0', hi, lo);
                                     n += fn(h, &capstr, sz);
@@ -289,7 +289,7 @@ static int printf_core(output_fun_t *fn, void *h, const char *fmt, va_list args)
                                 } else {
                                     t = uint_to_str(end, arg, dec_digits, 10, NULL);
                                 }
-                                size_t len = __builtin_cheri_length_get(t);
+                                size_t len = cheri_length_get(t);
                                 if (len < state.width) {
                                     bool left = TEST(state.feat, LEFT_ALIGN);
                                     if (left) {
@@ -333,7 +333,7 @@ static int printf_core(output_fun_t *fn, void *h, const char *fmt, va_list args)
                                 char *t = neg
                                     ? uint_to_str(end, -arg, dec_digits, 10, sign)
                                     : uint_to_str(end, arg, dec_digits, 10, sign);
-                                size_t len = __builtin_cheri_length_get(t);
+                                size_t len = cheri_length_get(t);
                                 if (!sign && len < state.width) {
                                     bool left = TEST(state.feat, LEFT_ALIGN);
                                     if (left) {

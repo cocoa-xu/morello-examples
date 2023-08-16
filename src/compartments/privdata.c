@@ -13,7 +13,6 @@
 #include <stdbool.h>
 #include <sys/mman.h>
 #include <sys/auxv.h>
-#include <cheriintrin.h>
 
 #include "morello.h"
 
@@ -153,15 +152,15 @@ static const char *encrypt_message(const priv_data_t *priv, char *out, const cha
     const unsigned *src = (const unsigned *)text;
     unsigned *dst = (unsigned *)out;
     size_t processed = 0;
-    while(morello_get_tail(src) > sizeof(unsigned)
-        && morello_get_tail(dst) > sizeof(unsigned)
+    while(cheri_get_tail(src) > sizeof(unsigned)
+        && cheri_get_tail(dst) > sizeof(unsigned)
         && processed < len) {
         *dst = *src ^ key;
         dst++;
         src++;
         processed += sizeof(unsigned);
     }
-    if (morello_in_bounds(out + processed)) {
+    if (cheri_in_bounds(out + processed)) {
         out[processed] = '\0';
     }
     return out;

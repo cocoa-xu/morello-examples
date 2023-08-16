@@ -11,7 +11,6 @@
 #include <sys/auxv.h>
 #include <sys/mman.h>
 #include <errno.h>
-#include <cheriintrin.h>
 
 #include "cmpt.h"
 #include "morello.h"
@@ -125,9 +124,9 @@ cmpt_fun_t *create_cmpt(cmpt_fun_t *target, unsigned stack_pages, const cmpt_fla
     /**
      * Check that global capabilities have been initialised.
      */
-    if (!morello_is_valid(__sealer)
+    if (!cheri_is_valid(__sealer)
 #if !defined(__GLIBC__) // Morello Glibc currently doesn't return a capability for AT_CHERI_CID_CAP
-        || !morello_is_valid(__cid)
+        || !cheri_is_valid(__cid)
 #endif
         ) {
         errno = EFAULT; // not initialised
@@ -225,9 +224,9 @@ void *reseal_and_remove_perms(void *sentry, size_t perms)
  */
 static void *_bsp_seal_cap(const void *cap, const void *cid)
 {
-    if (morello_check_perms(cap, PERM_CAP_INVOKE)
+    if (cheri_check_perms(cap, PERM_CAP_INVOKE)
 #if !defined(__GLIBC__) // Morello Glibc currently doesn't return a capability for AT_CHERI_CID_CAP
-        && cheri_tag_get(cid) && morello_check_perms(cid, PERM_CMPT_ID)
+        && cheri_tag_get(cid) && cheri_check_perms(cid, PERM_CMPT_ID)
 #endif
     ) {
         size_t otype = cheri_address_get(cid);

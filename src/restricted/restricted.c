@@ -12,8 +12,8 @@ __attribute__((noinline,used))
 int sum(int x, int y)
 {
     long cid = get_compartment_id();
-    printf("[%ld] csp: %s\n", cid, cap_to_str(NULL, __builtin_cheri_stack_get()));
-    printf("[%ld] pcc: %s\n", cid, cap_to_str(NULL, __builtin_cheri_program_counter_get()));
+    printf("[%ld] csp: %s\n", cid, cap_to_str(NULL, cheri_csp_get()));
+    printf("[%ld] pcc: %s\n", cid, cap_to_str(NULL, cheri_pcc_get()));
     return x + y;
 }
 
@@ -21,8 +21,8 @@ __attribute__((noinline,used))
 int sum_with_nested_cmpt(switch_t *cmpt, int x, int y)
 {
     long cid = get_compartment_id();
-    printf("[%ld] csp: %s\n", cid, cap_to_str(NULL, __builtin_cheri_stack_get()));
-    printf("[%ld] pcc: %s\n", cid, cap_to_str(NULL, __builtin_cheri_program_counter_get()));
+    printf("[%ld] csp: %s\n", cid, cap_to_str(NULL, cheri_csp_get()));
+    printf("[%ld] pcc: %s\n", cid, cap_to_str(NULL, cheri_pcc_get()));
     return cmpt(x, y);
 }
 
