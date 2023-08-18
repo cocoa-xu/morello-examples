@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -xe
+
 sudo apt update -q=2
 sudo apt install -q=2 --yes --no-install-recommends --no-install-suggests wget
 
@@ -21,6 +23,7 @@ tar -xf ${HOME}/morello-gcc-${MORELLO_GCC_VERSION}.tar.xz --strip-components 1
 popd
 
 # Build and test:
+touch config.make
 make distclean
 ./configure CC=${GCC_PREFIX}/bin/aarch64-none-linux-gnu-gcc
 make

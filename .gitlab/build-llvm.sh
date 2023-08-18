@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -xe
+
 sudo apt update -q=2
 sudo apt install -q=2 --yes --no-install-recommends --no-install-suggests wget
 
@@ -48,13 +50,14 @@ popd
 export MUSL_PREFIX_HYBRID=${HOME}/musl-sysroot-hybrid
 pushd ${MUSL_SOURCES}
 make distclean
-CC=${LLVM_PREFIX}/bin/clang ./configure --prefix=${MUSL_PREFIX_HYBRID} --target=aarch64-linux-gnu
+CC=${LLVM_PREFIX}/bin/clang ./configure --prefix=${MUSL_PREFIX_HYBRID} --disable-morello --target=aarch64-linux-gnu
 make -j8
 make install
 popd
 
 
 # Build and test:
+touch config.make
 make distclean
 ./configure CC=${LLVM_PREFIX}/bin/clang --sysroot=${MUSL_PREFIX_PURECAP} --sysroot-hybrid=${MUSL_PREFIX_HYBRID}
 make
